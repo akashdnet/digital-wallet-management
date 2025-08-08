@@ -16,12 +16,6 @@ import './app/config/passport';
 const app = express()
 
 
-
-
-
-
-
-
 app.use(expressSession({
     secret: envList.EXPRESS_SESSION_SECRET,
     resave: false,

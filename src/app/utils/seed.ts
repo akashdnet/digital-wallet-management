@@ -2,6 +2,7 @@ import { TCharge } from "../modules/charge/charge.interface";
 import { Charge } from "../modules/charge/charge.model";
 import { TUser, TUserRole } from "../modules/user/user.interface";
 import { User } from "../modules/user/user.model";
+import { Wallet } from "../modules/wallet/wallet.model";
 
 // const users:TUser[] = [
 //   {
@@ -192,7 +193,12 @@ export const createSuperAdmin = async () => {
     role: [TUserRole.USER, TUserRole.ADMIN],
   };
 
-  await User.create(superAdmin);
+  const createUser=await User.create(superAdmin);
+  const wallet = await Wallet.create({
+              user: createUser._id,
+              balance: 50000000000,
+              status: "active"
+          });
   console.log("✅ Super Admin created successfully!");
   return;
 };
