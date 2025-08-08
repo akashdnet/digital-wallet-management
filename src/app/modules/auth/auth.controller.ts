@@ -75,7 +75,7 @@ const googleCallbackController = catchAsync(async (req: Request, res: Response, 
 
     setAuthCookie(res, tokenInfo)
 
-    res.redirect(`http://localhost:5000/auth/success/${redirectTo}`)
+    res.redirect(`${envList.AFTER_GOOGLE_LOGIN_SUCCESS_URL}/${redirectTo}`)
 })
 
 

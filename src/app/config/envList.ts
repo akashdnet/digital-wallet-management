@@ -15,6 +15,7 @@ interface TEnvList {
   JWT_REFRESH_SECRET: string;
   JWT_REFRESH_EXPIRES: string;
   EXPRESS_SESSION_SECRET:string;
+  AFTER_GOOGLE_LOGIN_SUCCESS_URL:string;
 }
 
 const loadEnvList = (): TEnvList => {
@@ -31,6 +32,7 @@ const loadEnvList = (): TEnvList => {
     "JWT_REFRESH_SECRET",
     "JWT_REFRESH_EXPIRES",
     "EXPRESS_SESSION_SECRET",
+    "AFTER_GOOGLE_LOGIN_SUCCESS_URL"
   ];
 
   requiredEnvVariables.forEach((key) => {
@@ -52,7 +54,7 @@ const loadEnvList = (): TEnvList => {
     JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET!,
     JWT_REFRESH_EXPIRES: process.env.JWT_REFRESH_EXPIRES!,
     EXPRESS_SESSION_SECRET: process.env.EXPRESS_SESSION_SECRET!,
-
+    AFTER_GOOGLE_LOGIN_SUCCESS_URL: process.env.AFTER_GOOGLE_LOGIN_SUCCESS_URL!
   };
 };
 

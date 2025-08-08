@@ -4,9 +4,16 @@ import { AuthControllers } from "./auth.controller";
 
 const router = Router();
 
-router.post("/login", AuthControllers.credentialsLogin);
-router.get("/google", AuthControllers.google);
+router.post(
+  "/login", 
+  AuthControllers.credentialsLogin);
 
+
+router.get(
+  "/google", 
+  AuthControllers.google);
+
+  
 router.get(
   "/google/callback",
   passport.authenticate("google", { failureRedirect: "/login" }),
