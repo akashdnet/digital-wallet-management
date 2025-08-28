@@ -4,12 +4,14 @@ import { validateRequest } from "../../utils/validationRequest";
 import { UserValidation } from "./user.validation";
 import { checkAuth } from "../../middlewares/checkAuth";
 import { TUserRole } from "./user.interface";
+import { upload } from "../../middlewares/upload";
 
 const router = express.Router();
 
 // create 
 router.post(
   "/create",
+  upload.single("file"),
   validateRequest(UserValidation.createUserValidationSchema),
   UserControllers.createUser
 );
@@ -21,10 +23,19 @@ router.get("/all-users",
   UserControllers.getAllUsers);
 
 
+  // user profile 
+  router.get("/me", 
+  checkAuth(TUserRole.USER),
+  UserControllers.myProfile);
+
+
+
 // single user 
 router.get("/:id", 
   checkAuth(TUserRole.ADMIN, TUserRole.USER),
   UserControllers.getSingleUser);
+
+
 
 
 

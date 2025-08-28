@@ -77,6 +77,12 @@ import { Wallet } from "../wallet/wallet.model";
   };
 };
 
+
+
+
+
+
+
  const getSingleUser = async (req:Request, id: string) => {
   const result = await User.findById(id).select("-password").populate("wallet");
   if(!result){
@@ -85,6 +91,27 @@ import { Wallet } from "../wallet/wallet.model";
   
   return result;
 };
+
+
+
+
+
+
+ const myProfile = async (req:Request) => {
+  const result = await User.findById(req.decodedToken?.userId).select("-password");
+  if(!result){
+    throw new AppError(statusCode.NOT_FOUND, "User Not found.")
+  }
+  
+  return result;
+};
+
+
+
+
+
+
+
 
  const updateUser = async (req:Request, id: string, payload: Partial<TUser>) => {
   
@@ -105,6 +132,12 @@ import { Wallet } from "../wallet/wallet.model";
 
   return result;
 };
+
+
+
+
+
+
 
  const deleteUser = async (req:Request, id: string) => {
 
@@ -129,11 +162,6 @@ import { Wallet } from "../wallet/wallet.model";
 
 
 
-// wallet 
-
-
-
-
 
 
 
@@ -150,7 +178,8 @@ import { Wallet } from "../wallet/wallet.model";
   getAllUsers,
   getSingleUser,
   updateUser,
-  deleteUser
+  deleteUser,
+  myProfile,
 };
 
 export default UserServices;

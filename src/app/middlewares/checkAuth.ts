@@ -12,7 +12,10 @@ export const checkAuth =
   (...authRoles: string[]) =>
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const accessToken = req.headers.authorization;
+      let accessToken = req.headers.authorization;
+      if (!accessToken && req.cookies?.accessToken) {
+        accessToken = req.cookies.accessToken;
+      }
 
       // login check
       if (!accessToken) {
