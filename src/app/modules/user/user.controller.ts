@@ -4,12 +4,23 @@ import statusCode from "../../utils/statusCodes";
 import { sendResponse } from "../../utils/sendResponse";
 import { catchAsync } from "../../utils/catchAsync";
 import AppError from "../../utils/AppError";
-import { TUserRole } from "./user.interface";
+import { TUserRole, TUser } from "./user.interface";
+
+
+
+
 
 const createUser = catchAsync(async (req: Request, res: Response) => {
-  const result = await UserServices.createUser(req.body);
+  const payload:{
+    data: Partial<TUser>;
+    file: Express.Multer.File;
+}
+ = {
+    data : req.body,
+    file: req.file!,
+  }
+  const result = await UserServices.createUser(payload);
 
-  
 
   sendResponse(res, {
     statusCode: statusCode.CREATED,

@@ -6,14 +6,19 @@ import { TAuthProvider, TUser, TUserRole } from "./user.interface";
 import { User } from "./user.model";
 import bcrypt from "bcryptjs"
 import { Wallet } from "../wallet/wallet.model";
+import { deleteCloudinaryImage } from "../../config/cloudinary";
+import is from "zod/v4/locales/is.cjs";
 
 
 
- const createUser= async (payload: TUser) => {
+ const createUser= async (payload :{
+    data: Partial<TUser>;
+    file: Express.Multer.File;
+}) => {
     const session = await User.startSession();
     session.startTransaction();
     try {
-        const { email, password, ...rest } = payload;
+        const { email, password, phone, ...rest } = payload.data;
 
         const isUserExist = await User.findOne({ email }).session(session);
 
@@ -27,6 +32,8 @@ import { Wallet } from "../wallet/wallet.model";
 
         const user = await User.create([{
             email,
+            phone,
+            avatar: payload.file.path, 
             password: hashedPassword,
             authProviders: [authProvider],
             agentStatus: "idk",
@@ -59,6 +66,11 @@ import { Wallet } from "../wallet/wallet.model";
         return updatedUser;
     } catch (error) {
         await session.abortTransaction();
+
+        if(payload.file){
+          await deleteCloudinaryImage(payload.file.path)
+
+        }
         session.endSession();
         throw error;
     }
@@ -115,7 +127,8 @@ import { Wallet } from "../wallet/wallet.model";
 
  const updateUser = async (req:Request, id: string, payload: Partial<TUser>) => {
   
-    const {password, role, agentStatus, wallet,  ...rest} = payload;
+    const {password, role, agentStatus, wallet, authProviders, _id,  ...rest} = payload;
+    
     
 
     const authPayload = req.token_user_info.role.includes(TUserRole.ADMIN) ? {
@@ -125,10 +138,21 @@ import { Wallet } from "../wallet/wallet.model";
      }:{}
 
 
+     const isUserExist = await User.findById(payload._id)
+
+     
+
+
+
+
   const result = await User.findByIdAndUpdate(id, {...rest, ...authPayload }, {
     new: true,
   });
 
+
+  if(payload.avatar && isUserExist?.avatar && isUserExist.avatar !== payload.avatar){
+      await deleteCloudinaryImage(isUserExist.avatar)
+     }
 
   return result;
 };
@@ -152,6 +176,11 @@ import { Wallet } from "../wallet/wallet.model";
   if(!result){
     throw new AppError(statusCode.NOT_FOUND, "User not found.")
   }
+
+  if(result.avatar){
+    await deleteCloudinaryImage(result.avatar)
+  }
+
   return result;
 };
 

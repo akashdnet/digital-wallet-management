@@ -3,12 +3,21 @@ import { TUser, TUserRole } from "./user.interface";
 
 const userSchema = new Schema<TUser>(
   {
+    avatar:{
+      type: String,
+      required: true,
+    },
     name: {
       type: String,
       required: true,
     },
     email: {
       type: String,
+      required: true,
+      unique: true,
+    },
+    phone: {
+      type: Number,
       required: true,
       unique: true,
     },

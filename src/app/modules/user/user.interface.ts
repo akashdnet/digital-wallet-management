@@ -16,9 +16,10 @@ export interface TAuthProvider {
 
 export interface TUser {
     _id?: ObjectId,
-    profile_image?:string;
+    avatar?:string;
     name:string;
     email:string;
+    phone?:number;
     password?:string;
     authProviders?: TAuthProvider[]
     role?: TUserRole[];
