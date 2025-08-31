@@ -25,4 +25,5 @@ export interface TUser {
     role?: TUserRole[];
     wallet?: ObjectId,
     agentStatus?: TAgentStatus;
+    status?:string;
 }
