@@ -1,9 +1,16 @@
 import { NextFunction, Request, Response } from "express"
 import AppError from "../utils/AppError"
 import { envList } from "../config/envList"
+import { deleteCloudinaryImage } from "../config/cloudinary"
 
-const globalErrorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
+const globalErrorHandler = async (err: any, req: Request, res: Response, next: NextFunction) => {
     envList.NODE_ENV == "development" && console.log(err)
+
+    if (req.file) {
+        await deleteCloudinaryImage(req.file.path)
+    }
+
+
 
     let statusCode = 500
     let message = "Something Went Wrong!"

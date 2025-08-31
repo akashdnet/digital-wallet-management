@@ -3,11 +3,20 @@ import { TUser, TUserRole } from "./user.interface";
 
 const userSchema = new Schema<TUser>(
   {
+    avatar:{
+      type: String,
+      required: true,
+    },
     name: {
       type: String,
       required: true,
     },
     email: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    phone: {
       type: String,
       required: true,
       unique: true,
@@ -40,7 +49,7 @@ const userSchema = new Schema<TUser>(
     },
     agentStatus: {
       type: String,
-      enum: ["idk", "approved", "suspended"],
+      enum: ["idk", "approved", "suspended", "pending"],
       default: "idk",
     },
   },

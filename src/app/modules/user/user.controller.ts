@@ -4,12 +4,19 @@ import statusCode from "../../utils/statusCodes";
 import { sendResponse } from "../../utils/sendResponse";
 import { catchAsync } from "../../utils/catchAsync";
 import AppError from "../../utils/AppError";
-import { TUserRole } from "./user.interface";
+import { TUserRole, TUser } from "./user.interface";
 
+
+
+
+
+interface TCreateUserPayload {data: Partial<TUser>;file: Express.Multer.File;}
 const createUser = catchAsync(async (req: Request, res: Response) => {
-  const result = await UserServices.createUser(req.body);
 
-  
+
+  const payload:TCreateUserPayload= { data : req.body, file: req.file!}
+  const result = await UserServices.createUser(payload);
+
 
   sendResponse(res, {
     statusCode: statusCode.CREATED,
@@ -18,6 +25,38 @@ const createUser = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+
+
+
+
+const updateMyProfile = catchAsync(async (req: Request, res: Response) => {
+  
+  // console.log(`update mmy profile payload.decodedToken.userId:`,  req.decodedToken)
+  
+  const payload:Partial<TCreateUserPayload & {decodedToken:any}>= { data : req.body, file: req.file!, decodedToken:req.decodedToken }
+  const result = await UserServices.updateMyProfile(payload);
+
+
+  sendResponse(res, {
+    statusCode: statusCode.CREATED,
+    success: true,
+    message: "Profile updated successfully",
+    data: result,
+  });
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 const getAllUsers = catchAsync(async (req: Request, res: Response) => {
   const result = await UserServices.getAllUsers();
@@ -33,6 +72,7 @@ const getAllUsers = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+
 const getSingleUser = catchAsync(async (req: Request, res: Response) => {
   
   const { id } = req.params;
@@ -47,6 +87,23 @@ const getSingleUser = catchAsync(async (req: Request, res: Response) => {
     data: user
   });
 });
+
+
+
+
+
+const myProfile = catchAsync(async (req: Request, res: Response) => {
+  
+  const user = await UserServices.myProfile(req);
+  sendResponse(res, {
+    statusCode: statusCode.OK,
+    success: true,
+    message: "User retrieved successfully",
+    data: user
+  });
+});
+
+
 
 
 
@@ -90,4 +147,6 @@ export const UserControllers = {
   getSingleUser,
   updateUser,
   deleteUser,
+  myProfile,
+  updateMyProfile
 };

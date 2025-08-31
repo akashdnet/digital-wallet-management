@@ -2,7 +2,7 @@ import { Server } from "http";
 import mongoose from "mongoose";
 import app from "./app";
 import { envList } from "./app/config/envList";
-import { createServiceCharge, createSuperAdmin } from "./app/utils/seed";
+import { createServiceCharge, createSuperAdmin, seed } from "./app/utils/seed";
 
 let server: Server;
 

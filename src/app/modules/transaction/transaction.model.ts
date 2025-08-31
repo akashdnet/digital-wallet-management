@@ -3,13 +3,13 @@ import { TTransaction, TTransactionStatus, TTransactionType } from "./transactio
 
 const transactionSchema = new Schema<TTransaction>(
   {
+    transactionId: {
+      type : String,
+      require: true
+    },
     type: {
       type: String,
       enum: [ "send-money", "top-up", "cash-in", "cash-out"] as TTransactionType[],
-      required: true,
-    },
-    amount: {
-      type: Number,
       required: true,
     },
     senderId: {
@@ -20,23 +20,34 @@ const transactionSchema = new Schema<TTransaction>(
       type: Schema.Types.ObjectId,
       ref: "User",
     },
-    mobileNumber: {
-      type: Number,
+    sentBy: {
+      type: String,   //email or phone number
     },
     agentId: {
       type: Schema.Types.ObjectId,
       ref: "User",
     },
-    fee: {
-      percentage: {
+    charge: {
+      currentBalance: {
         type: Number,
       },
-      charge: {
-        type: Number,
+      requestedSendingAmount: {
+        type: Number ,
       },
-      fee: {
-        type: Number,
+      serviceChargeForSendMoneySet: {
+        type: String || undefined, // how much admin set
       },
+      serviceChargeForCashOutPercentageSet: {
+        type: Number || undefined, // how much admin set
+      },
+      serviceChargeForCashOutPercentage: {
+        type: Number, // how much the net charge 
+      },
+      amountWithCharge: {
+        type: Number, // how much should reduce after adding charge fee
+      },
+    
+
     },
     status: {
       type: String,

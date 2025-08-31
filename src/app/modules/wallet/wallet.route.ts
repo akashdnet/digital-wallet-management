@@ -11,32 +11,32 @@ router.get(
   WalletControllers.getWalletByUserId
 );
 
-router.patch(
+router.post(
   "/status",
   checkAuth(TUserRole.ADMIN),
   WalletControllers.walletStatus
 );
 
-router.patch(
+router.post(
   "/send-money",
   checkAuth(TUserRole.USER),
   WalletControllers.sendMoney
 );
 
-router.patch(
+router.post(
   "/top-up",
   checkAuth(TUserRole.USER),
   WalletControllers.topUp
 );
 
-router.patch(
+router.post(
   "/cash-in",
   checkAuth(TUserRole.AGENT),
   WalletControllers.cashIn
 );
 
 
-router.patch(
+router.post(
   "/cash-out",
   checkAuth(TUserRole.USER),
   WalletControllers.cashOut

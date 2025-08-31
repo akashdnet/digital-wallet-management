@@ -6,14 +6,20 @@ import { TAuthProvider, TUser, TUserRole } from "./user.interface";
 import { User } from "./user.model";
 import bcrypt from "bcryptjs"
 import { Wallet } from "../wallet/wallet.model";
+import { deleteCloudinaryImage } from "../../config/cloudinary";
+import is from "zod/v4/locales/is.cjs";
+import { Transaction } from "../transaction/transaction.model";
 
 
 
- const createUser= async (payload: TUser) => {
+ const createUser= async (payload :{
+    data: Partial<TUser>;
+    file: Express.Multer.File;
+}) => {
     const session = await User.startSession();
     session.startTransaction();
     try {
-        const { email, password, ...rest } = payload;
+        const { email, password, phone, role, ...rest } = payload.data;
 
         const isUserExist = await User.findOne({ email }).session(session);
 
@@ -27,9 +33,12 @@ import { Wallet } from "../wallet/wallet.model";
 
         const user = await User.create([{
             email,
+            phone: Number(phone),
+            avatar: payload.file.path, 
             password: hashedPassword,
             authProviders: [authProvider],
-            agentStatus: "idk",
+            agentStatus: role?.includes(TUserRole.AGENT) ? "pending" : "idk" ,
+            role: [TUserRole.USER],
             ...rest
         }], { session });
 
@@ -59,12 +68,49 @@ import { Wallet } from "../wallet/wallet.model";
         return updatedUser;
     } catch (error) {
         await session.abortTransaction();
+
+        if(payload.file){
+          await deleteCloudinaryImage(payload.file.path)
+
+        }
         session.endSession();
         throw error;
     }
 };
 
+const myProfile = async (req:Request) => {
+  const userInfo = await User.findById(req.decodedToken?.userId ).select("-password").populate("wallet");
+ 
+  const transactions = await Transaction.find({
+      $or: [{ senderId: req.decodedToken?.userId }, { receiverId: req.decodedToken?.userId }]
+    }).sort({ createdAt: -1 }); 
+     
 
+    // console.log(transactions)
+
+  const result = {userInfo,transactions}
+
+  if(!result.userInfo){
+    throw new AppError(statusCode.NOT_FOUND, "User Not found.")
+  }
+  
+  return result;
+};
+
+
+
+const updateMyProfile = async (payload:any) => {
+
+  // console.log(`update mmy profile payload.decodedToken.userId:`,  payload.decodedToken.userId)
+  console.log(`payload data:`, payload.data)
+
+  const result = await User.findByIdAndUpdate(payload.decodedToken.userId, {...payload.data, avatar: payload.file?.path}, { new: true, runValidators: true })
+  if(!result){
+    throw new AppError(statusCode.NOT_FOUND, "User Not found.")
+  }
+  
+  return result;
+};
 
 
 
@@ -77,6 +123,12 @@ import { Wallet } from "../wallet/wallet.model";
   };
 };
 
+
+
+
+
+
+
  const getSingleUser = async (req:Request, id: string) => {
   const result = await User.findById(id).select("-password").populate("wallet");
   if(!result){
@@ -86,9 +138,15 @@ import { Wallet } from "../wallet/wallet.model";
   return result;
 };
 
+
+
+
+
+
  const updateUser = async (req:Request, id: string, payload: Partial<TUser>) => {
   
-    const {password, role, agentStatus, wallet,  ...rest} = payload;
+    const {password, role, agentStatus, wallet, authProviders, _id,  ...rest} = payload;
+    
     
 
     const authPayload = req.token_user_info.role.includes(TUserRole.ADMIN) ? {
@@ -98,13 +156,30 @@ import { Wallet } from "../wallet/wallet.model";
      }:{}
 
 
-  const result = await User.findByIdAndUpdate(id, {...rest, ...authPayload }, {
+     const isUserExist = await User.findById(payload._id)
+
+     
+
+
+
+
+  const result = await User.findByIdAndUpdate(id, {...rest, phone: Number(payload.phone), ...authPayload }, {
     new: true,
   });
 
 
+  if(payload.avatar && isUserExist?.avatar && isUserExist.avatar !== payload.avatar){
+      await deleteCloudinaryImage(isUserExist.avatar)
+     }
+
   return result;
 };
+
+
+
+
+
+
 
  const deleteUser = async (req:Request, id: string) => {
 
@@ -119,17 +194,17 @@ import { Wallet } from "../wallet/wallet.model";
   if(!result){
     throw new AppError(statusCode.NOT_FOUND, "User not found.")
   }
+
+  if(result.avatar){
+    await deleteCloudinaryImage(result.avatar)
+  }
+
   return result;
 };
 
 
 
 
-
-
-
-
-// wallet 
 
 
 
@@ -150,7 +225,9 @@ import { Wallet } from "../wallet/wallet.model";
   getAllUsers,
   getSingleUser,
   updateUser,
-  deleteUser
+  deleteUser,
+  myProfile,
+  updateMyProfile
 };
 
 export default UserServices;

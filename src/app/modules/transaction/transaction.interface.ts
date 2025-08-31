@@ -10,13 +10,31 @@ export interface TTransactionFee {
     fee: number; 
 }
 
+
+
+
+
+export interface TCharge {
+      currentBalance: number;
+      requestedSendingAmount: number;
+      serviceChargeForSendMoneySet: number;
+      serviceChargeForCashOutPercentageSet: string;
+      serviceChargeForCashOutPercentage: number;
+      amountWithCharge: number;
+    
+
+    }
+
+
+
 export interface TTransaction {
+    transactionId: string
     type: TTransactionType;
-    amount: number;
     senderId?: ObjectId;
     receiverId?: ObjectId;
+    sentBy: string;
     agentId?: ObjectId;
-    fee?: TTransactionFee;
+    charge?: TCharge;
     status?: TTransactionStatus;
     mobileNumber?: number;
 }

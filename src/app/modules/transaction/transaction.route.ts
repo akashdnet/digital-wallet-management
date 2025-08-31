@@ -12,6 +12,20 @@ router.get(
 );
 
 router.get(
+  "/my-transactions",
+  checkAuth(TUserRole.USER),
+  TransactionControllers.fetchMyAllTransactions
+);
+
+
+router.get(
+  "/test",
+  TransactionControllers.test
+);
+
+
+
+router.get(
   "/:id",
   checkAuth(TUserRole.ADMIN, TUserRole.USER),
   TransactionControllers.getUserTransaction

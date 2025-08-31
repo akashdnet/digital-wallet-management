@@ -12,7 +12,10 @@ export const checkAuth =
   (...authRoles: string[]) =>
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const accessToken = req.headers.authorization;
+      let accessToken = req.headers.authorization;
+      if (!accessToken && req.cookies?.accessToken) {
+        accessToken = req.cookies.accessToken;
+      }
 
       // login check
       if (!accessToken) {
@@ -39,6 +42,17 @@ export const checkAuth =
       //     `Unauthorize access!: ${isUserExist.status} account cant be access this route`
       //   );
       // }
+
+
+
+
+      req.decodedToken = verifiedToken;
+      req.token_user_info = isUserExist;
+
+
+
+
+
 
       // role - authorization check
       const authorization = isUserExist.role?.some((role) =>
