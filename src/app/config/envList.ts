@@ -20,6 +20,7 @@ interface TEnvList {
   CLOUDINARY_API_KEY: string;
   CLOUDINARY_API_SECRET: string;
   CLOUDINARY_UPLOAD_PRESET: string;
+  FRONT_END_SITE: string;
 }
 
 const loadEnvList = (): TEnvList => {
@@ -41,6 +42,7 @@ const loadEnvList = (): TEnvList => {
     "CLOUDINARY_API_KEY",
     "CLOUDINARY_API_SECRET",
     "CLOUDINARY_UPLOAD_PRESET",
+    "FRONT_END_SITE",
   ];
 
   requiredEnvVariables.forEach((key) => {
@@ -67,6 +69,7 @@ const loadEnvList = (): TEnvList => {
     CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY!,
     CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET!,
     CLOUDINARY_UPLOAD_PRESET: process.env.CLOUDINARY_UPLOAD_PRESET!,
+    FRONT_END_SITE: process.env.FRONT_END_SITE!,
   };
 };
 
