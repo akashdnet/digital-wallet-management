@@ -9,7 +9,25 @@ const fetchAllTransactions = catchAsync(async (req: Request, res: Response) => {
   res.status(statusCode.OK).json({
     success: true,
     message: "Fetched transactions successfully",
-    data: result,
+    meta: {
+      totalTransactions: result.totalTransactions
+    },
+    data: result.transactions,
+  });
+});
+
+
+const fetchMyAllTransactions = catchAsync(async (req: Request, res: Response) => {
+  const payload = req.token_user_info
+  const result = await TransactionServices.fetchMyAllTransactions(payload);
+
+  res.status(statusCode.OK).json({
+    success: true,
+    message: "Fetched transactions successfully",
+    data: result.transactions,
+    meta: {
+      totalTransactions: result.totalTransactions
+    },
   });
 });
 
@@ -30,10 +48,24 @@ const getUserTransaction = catchAsync(async (req: Request, res: Response) => {
 });
 
 
+const test = catchAsync(async (req: Request, res: Response) => {
+  // const { id } = req.params;
+  const result = await TransactionServices.test(req.body);
+
+  res.status(statusCode.OK).json({
+    success: true,
+    message: "Transaction created successfully.",
+    data: result,
+  });
+});
+
+
 
 
 
 export const TransactionControllers = {
   fetchAllTransactions,
+  fetchMyAllTransactions,
     getUserTransaction,
+    test,
 };

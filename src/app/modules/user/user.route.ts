@@ -17,16 +17,33 @@ router.post(
 );
 
 
+  // user profile 
+  router.get("/me", 
+  checkAuth(TUserRole.USER),
+  UserControllers.myProfile);
+  
+  
+  
+  // update profile 
+  router.post(
+    "/me",
+  checkAuth(TUserRole.USER),
+  upload.single("file"),
+  validateRequest(UserValidation.updateMyProfileValidationSchema),
+  UserControllers.updateMyProfile
+);
+
+
+
+
+
 // all user 
 router.get("/all-users", 
   checkAuth(TUserRole.ADMIN), 
   UserControllers.getAllUsers);
 
 
-  // user profile 
-  router.get("/me", 
-  checkAuth(TUserRole.USER),
-  UserControllers.myProfile);
+
 
 
 

@@ -10,15 +10,11 @@ import { TUserRole, TUser } from "./user.interface";
 
 
 
+interface TCreateUserPayload {data: Partial<TUser>;file: Express.Multer.File;}
 const createUser = catchAsync(async (req: Request, res: Response) => {
-  const payload:{
-    data: Partial<TUser>;
-    file: Express.Multer.File;
-}
- = {
-    data : req.body,
-    file: req.file!,
-  }
+
+
+  const payload:TCreateUserPayload= { data : req.body, file: req.file!}
   const result = await UserServices.createUser(payload);
 
 
@@ -29,6 +25,38 @@ const createUser = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+
+
+
+
+const updateMyProfile = catchAsync(async (req: Request, res: Response) => {
+  
+  // console.log(`update mmy profile payload.decodedToken.userId:`,  req.decodedToken)
+  
+  const payload:Partial<TCreateUserPayload & {decodedToken:any}>= { data : req.body, file: req.file!, decodedToken:req.decodedToken }
+  const result = await UserServices.updateMyProfile(payload);
+
+
+  sendResponse(res, {
+    statusCode: statusCode.CREATED,
+    success: true,
+    message: "Profile updated successfully",
+    data: result,
+  });
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 const getAllUsers = catchAsync(async (req: Request, res: Response) => {
   const result = await UserServices.getAllUsers();
@@ -77,6 +105,9 @@ const myProfile = catchAsync(async (req: Request, res: Response) => {
 
 
 
+
+
+
 const updateUser = catchAsync(async (req: Request, res: Response) => {
 
   const { id } = req.params;
@@ -117,4 +148,5 @@ export const UserControllers = {
   updateUser,
   deleteUser,
   myProfile,
+  updateMyProfile
 };

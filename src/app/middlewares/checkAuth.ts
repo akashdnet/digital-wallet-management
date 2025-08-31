@@ -43,6 +43,17 @@ export const checkAuth =
       //   );
       // }
 
+
+
+
+      req.decodedToken = verifiedToken;
+      req.token_user_info = isUserExist;
+
+
+
+
+
+
       // role - authorization check
       const authorization = isUserExist.role?.some((role) =>
         authRoles.includes(role)

@@ -17,7 +17,7 @@ const userSchema = new Schema<TUser>(
       unique: true,
     },
     phone: {
-      type: Number,
+      type: String,
       required: true,
       unique: true,
     },
@@ -49,7 +49,7 @@ const userSchema = new Schema<TUser>(
     },
     agentStatus: {
       type: String,
-      enum: ["idk", "approved", "suspended"],
+      enum: ["idk", "approved", "suspended", "pending"],
       default: "idk",
     },
   },

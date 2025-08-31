@@ -1,8 +1,10 @@
 import { TCharge } from "../modules/charge/charge.interface";
 import { Charge } from "../modules/charge/charge.model";
+import { Transaction } from "../modules/transaction/transaction.model";
 import { TUser, TUserRole } from "../modules/user/user.interface";
 import { User } from "../modules/user/user.model";
 import { Wallet } from "../modules/wallet/wallet.model";
+import { transactionsData } from "./transactionsData";
 
 // const users:TUser[] = [
 //   {
@@ -164,14 +166,14 @@ import { Wallet } from "../modules/wallet/wallet.model";
 
 
 
-// export const seed = async () => {
-//   //todo: super admin seeding
+export const seed = async () => {
+  //todo: super admin seeding
  
 
 
-//   // await User.insertMany(users);
-//   console.log("✅ 11 users inserted successfully!");
-// };
+  await Transaction.insertMany(transactionsData);
+  console.log("✅ inserted successfully! transactions");
+};
 
 
 
@@ -186,6 +188,8 @@ export const createSuperAdmin = async () => {
   const superAdmin: TUser = {
     name: "Super Admin",
     email: "super.admin@gmail.com",
+    phone: 11300000000,
+    avatar: "https://example.com/images/1.jpg",
     password:"$2b$10$X2tX1VgRmcNzZzQ6fL2znOWi0F56Lc6OC2pbCk5cHr665Y1gm9bxy",
     authProviders: [
       { provider: "credential", providerId: "super.admin@gmail.com" },
@@ -199,6 +203,13 @@ export const createSuperAdmin = async () => {
               balance: 50000000000,
               status: "active"
           });
+
+  const updatedUser = await User.findByIdAndUpdate(
+    createUser._id,
+    { wallet: wallet._id },
+    { new: true }
+  );
+  
   console.log("✅ Super Admin created successfully!");
   return;
 };

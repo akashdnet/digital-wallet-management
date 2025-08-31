@@ -8,6 +8,7 @@ import bcrypt from "bcryptjs"
 import { Wallet } from "../wallet/wallet.model";
 import { deleteCloudinaryImage } from "../../config/cloudinary";
 import is from "zod/v4/locales/is.cjs";
+import { Transaction } from "../transaction/transaction.model";
 
 
 
@@ -18,7 +19,7 @@ import is from "zod/v4/locales/is.cjs";
     const session = await User.startSession();
     session.startTransaction();
     try {
-        const { email, password, phone, ...rest } = payload.data;
+        const { email, password, phone, role, ...rest } = payload.data;
 
         const isUserExist = await User.findOne({ email }).session(session);
 
@@ -32,11 +33,12 @@ import is from "zod/v4/locales/is.cjs";
 
         const user = await User.create([{
             email,
-            phone,
+            phone: Number(phone),
             avatar: payload.file.path, 
             password: hashedPassword,
             authProviders: [authProvider],
-            agentStatus: "idk",
+            agentStatus: role?.includes(TUserRole.AGENT) ? "pending" : "idk" ,
+            role: [TUserRole.USER],
             ...rest
         }], { session });
 
@@ -76,7 +78,39 @@ import is from "zod/v4/locales/is.cjs";
     }
 };
 
+const myProfile = async (req:Request) => {
+  const userInfo = await User.findById(req.decodedToken?.userId ).select("-password").populate("wallet");
+ 
+  const transactions = await Transaction.find({
+      $or: [{ senderId: req.decodedToken?.userId }, { receiverId: req.decodedToken?.userId }]
+    }).sort({ createdAt: -1 }); 
+     
 
+    // console.log(transactions)
+
+  const result = {userInfo,transactions}
+
+  if(!result.userInfo){
+    throw new AppError(statusCode.NOT_FOUND, "User Not found.")
+  }
+  
+  return result;
+};
+
+
+
+const updateMyProfile = async (payload:any) => {
+
+  // console.log(`update mmy profile payload.decodedToken.userId:`,  payload.decodedToken.userId)
+  console.log(`payload data:`, payload.data)
+
+  const result = await User.findByIdAndUpdate(payload.decodedToken.userId, {...payload.data, avatar: payload.file?.path}, { new: true, runValidators: true })
+  if(!result){
+    throw new AppError(statusCode.NOT_FOUND, "User Not found.")
+  }
+  
+  return result;
+};
 
 
 
@@ -109,22 +143,6 @@ import is from "zod/v4/locales/is.cjs";
 
 
 
- const myProfile = async (req:Request) => {
-  const result = await User.findById(req.decodedToken?.userId).select("-password");
-  if(!result){
-    throw new AppError(statusCode.NOT_FOUND, "User Not found.")
-  }
-  
-  return result;
-};
-
-
-
-
-
-
-
-
  const updateUser = async (req:Request, id: string, payload: Partial<TUser>) => {
   
     const {password, role, agentStatus, wallet, authProviders, _id,  ...rest} = payload;
@@ -145,7 +163,7 @@ import is from "zod/v4/locales/is.cjs";
 
 
 
-  const result = await User.findByIdAndUpdate(id, {...rest, ...authPayload }, {
+  const result = await User.findByIdAndUpdate(id, {...rest, phone: Number(payload.phone), ...authPayload }, {
     new: true,
   });
 
@@ -209,6 +227,7 @@ import is from "zod/v4/locales/is.cjs";
   updateUser,
   deleteUser,
   myProfile,
+  updateMyProfile
 };
 
 export default UserServices;
