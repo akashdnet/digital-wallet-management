@@ -4,176 +4,569 @@ import { TUserRole } from "../user/user.interface";
 import { UpdateUserProfileType } from "./admin.validation";
 import { Wallet } from "../wallet/wallet.model";
 import { startOfYear, endOfYear } from "date-fns";
+import { TWalletStatus } from "../wallet/wallet.interface";
+import { Types } from "mongoose";
 
+
+
+
+// done 
 const dashboardOverview = async () => {
+  const totalTransactions = await Transaction.countDocuments();
 
-
-  const totalUserCount = await User.countDocuments({ role: TUserRole.USER });
-  const totalAgentCount = await User.countDocuments({ role: TUserRole.AGENT });
-  const userList = await User.find({ role: { $ne: TUserRole.AGENT } }).populate("wallet");
-  const agentList = await User.find({role: { $eq: TUserRole.AGENT },}).populate("wallet");
-  const adminList = await User.find({role: { $eq: TUserRole.ADMIN },}).populate("wallet");
-  const transactionList = await Transaction.find();
-  const totalTransactionCount =  transactionList?.length || 0;
-
-
-
-
-
-   const monthNames = ["January", "February", "March", "April", "May", "June","July", "August", "September", "October", "November", "December"];
-  const currentYear = new Date().getFullYear();
-  const start = startOfYear(new Date(currentYear, 0, 1));
-  const end = endOfYear(new Date(currentYear, 11, 31));
-
-  const stats = await Transaction.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: start, $lte: end },
-        },
-      },
-      {
-        $group: {
-          _id: { $month: "$createdAt" },
-          count: { $sum: 1 },
-        },
-      },
-      {
-        $sort: { "_id": 1 },
-      },
-    ]);
-
-   
-
-    const transactionStats: Record<string, number> = {};
-    for (let i = 0; i < 12; i++) {
-      const monthName = monthNames[i];
-      const found = stats.find((s) => s._id === i + 1);
-      transactionStats[monthName] = found ? found.count : 0;
-    }
-
-
-
-  const statsUser = await User.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: start, $lte: end },
-        },
-      },
-      {
-        $group: {
-          _id: { $month: "$createdAt" },
-          count: { $sum: 1 },
-        },
-      },
-      {
-        $sort: { "_id": 1 },
-      },
-    ]);
-
-   
-
-    const userStats: Record<string, number> = {};
-    for (let i = 0; i < 12; i++) {
-      const monthName = monthNames[i];
-      const found = statsUser.find((s) => s._id === i + 1);
-      userStats[monthName] = found ? found.count : 0;
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  const result = {
-    totalUserCount,
-    totalAgentCount,
-    totalTransactionCount,
-    userList,
-    agentList,
-    adminList,
-    transactionList,
-    transactionStats,
-    userStats,
-  };
-
-  return result;
-};
-
-const updateUserProfile = async (payload: UpdateUserProfileType) => {
-  const userPayload = {
-    name: payload.name,
-    email: payload.email,
-    phone: payload.phone,
-    role: payload.role,
-    agentStatus: payload.agentStatus,
-  };
-
-  const walletPayload = {
-    balance: payload.walletBalance,
-    status: payload.walletStatus,
-  };
-
-  const isUserExist = await User.findOne({ _id: payload.id });
-  if (!isUserExist) {
-    throw new Error("User not found");
-  }
-
-  const updateUser = await User.findByIdAndUpdate(payload.id, userPayload, {
-    new: true,
-  });
-
-  const updateWallet = await Wallet.findOneAndUpdate(
-    { user: isUserExist._id },
-    walletPayload,
+  const stats = await User.aggregate([
     {
-      new: true,
+      $match: {
+        role: { $in: ["user", "agent"] }
+      }
+    },
+    {
+      $lookup: {
+        from: "wallets",
+        localField: "_id",
+        foreignField: "user",
+        as: "wallet"
+      }
+    },
+    {
+      $set: {
+        wallet: { $arrayElemAt: ["$wallet", 0] } 
+      }
+    },
+    {
+      $group: {
+        _id: {
+          role: "$role",
+          status: { $ifNull: ["$wallet.status", "no_wallet"] }
+        },
+        count: { $sum: 1 }
+      }
+    },
+    {
+      $group: {
+        _id: "$_id.role",
+        breakdown: {
+          $push: { k: "$_id.status", v: "$count" }
+        },
+        total: { $sum: "$count" }
+      }
+    },
+    {
+      $project: {
+        role: "$_id",
+        total: 1,
+        breakdown: { $arrayToObject: "$breakdown" },
+        _id: 0
+      }
+    },
+    {
+      $sort: { role: 1 }
     }
-  );
+  ]);
 
-  const result = {
-    updateUser,
-    updateWallet,
-  };
+  const year = new Date().getFullYear();
 
-  return result;
+  const monthlyStats = await Transaction.aggregate([
+    {
+      $match: {
+        date: {
+          $gte: new Date(`${year}-01-01`),
+          $lt: new Date(`${year + 1}-01-01`)
+        }
+      }
+    },
+    {
+      $group: {
+        _id: { month: { $month:  "$date" } },
+        count: { $sum: 1 }
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        month: {
+          $arrayElemAt: [
+            ["", "January", "February", "March", "April", "May", "June",
+             "July", "August", "September", "October", "November", "December"],
+            "$_id.month"
+          ]
+        },
+        count: 1
+      }
+    },
+    { $sort: { month: 1 } }
+  ]);
+
+  return { stats, totalTransactions, monthlyStats };
 };
 
-const deleteUser = async (payload: any) => {
-  console.log(`payload                     :`, payload);
 
-  const isUserExist = await User.findOne({ _id: payload });
-  if (!isUserExist) {
+
+
+
+
+// done 
+const fetchAllTransactions = async (payload: any) => {
+
+  const limit = Number(payload?.queries?.limit) || 10;
+  const page = Number(payload?.queries?.page) || 1;
+  const skip = (page - 1) * limit;
+  const term = payload?.queries?.term || "";
+
+  const filter: any = {
+    // $or: [{ to: payload._id }, { from: payload._id }],
+  };
+
+  if (term) {
+const filters: any[] = [
+  { id: { $regex: term, $options: "i" } },
+  { method: { $regex: term, $options: "i" } },
+  { to: { $regex: term, $options: "i" } },
+  { from: { $regex: term, $options: "i" } },
+];
+
+
+if (!isNaN(Number(term))) {
+  filters.push({ amount: Number(term) });
+}
+
+filter.$and = [{ $or: filters }];
+
+  }
+
+  const totalTransactions = await Transaction.countDocuments(filter);
+
+  const transactions = await Transaction.find(filter)
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .skip(skip);
+
+  return {
+    transactions,
+    meta: {
+      totalTransactions,
+      page,
+      limit,
+      totalPages: Math.ceil(totalTransactions / limit),
+    },
+  };
+};
+
+
+
+
+
+
+
+// done 
+const updateUserProfile = async (payload: UpdateUserProfileType, id: string) => {
+  const user = await User.findById(id);
+  if (!user) {
     throw new Error("User not found");
   }
 
-  const deleteUserProfile = await User.findOneAndDelete({ _id: payload });
+  user.name = payload.name;
+  user.email = payload.email;
+  user.phone = payload.phone;
 
-  const deleteUserWallet = await Wallet.findOneAndDelete({
-    user: isUserExist._id,
-  });
+  if (payload.password) {
+    user.password = payload.password; 
+  }
 
-  const result = {
-    deleteUserProfile,
-    deleteUserWallet,
-  };
-
+  const result = await user.save(); 
   return result;
 };
+
+
+
+
+
+
+
+
+
+
+// done 
+const deleteUser = async (payload: string) => {
+  
+  if (!Types.ObjectId.isValid(payload)) {
+    throw new Error(`Invalid user ID: ${payload}`);
+  }
+
+  const userId = new Types.ObjectId(payload);
+
+    const session = await User.startSession();
+  session.startTransaction();
+
+  try {
+    
+    const isUserExist = await User.findById(userId).session(session);
+    if (!isUserExist) {
+      throw new Error("User not found");
+    }
+
+    
+    const deleteUserProfile = await User.findByIdAndDelete(userId).session(session);
+    
+    if (!deleteUserProfile) {
+      throw new Error("Failed to delete user profile");
+    }
+    const deleteUserWallet = await Wallet.findOneAndDelete({ user: userId }).session(session);
+
+    
+
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return {
+      deleteUserProfile,
+      deleteUserWallet,
+    };
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    throw error; 
+  }
+};
+
+
+
+
+
+
+// done 
+const pendingUsers = async (payload: any) => {
+
+  const page = Number(payload?.queries?.page) || 1;
+  const limit = Number(payload?.queries?.limit) || 5;
+  const skip = (page - 1) * limit;
+  const term = payload?.queries?.term || "";
+
+  
+  const pipeline: any[] = [
+    
+    { $match: { role: TUserRole.USER } },
+    {
+      $lookup: {
+        from: "wallets",
+        localField: "_id",
+        foreignField: "user",
+        as: "wallet"
+      }
+    },
+    { $unwind: "$wallet" },
+    { $match: { "wallet.status": "pending" } },
+  ];
+
+  
+  if (term) {
+    pipeline.push({
+      $match: {
+        $or: [
+          { name: { $regex: term, $options: "i" } },
+          { email: { $regex: term, $options: "i" } },
+          { phone: { $regex: term, $options: "i" } },
+        ]
+      }
+    });
+  }
+
+  
+  const totalPipeline = [...pipeline, { $count: "total" }];
+  const totalResult = await User.aggregate(totalPipeline);
+  const totalUsers = totalResult[0]?.total || 0;
+
+  const dataPipeline = [
+    ...pipeline,
+    { $sort: { createdAt: -1 } },
+    { $skip: skip },
+    { $limit: limit },
+  ];
+
+  const users = await User.aggregate(dataPipeline);
+
+  return {
+    data: users,
+    meta: {
+      total: totalUsers,
+      page,
+      limit,
+      totalPages: Math.ceil(totalUsers / limit),
+    },
+  };
+};
+
+
+
+
+
+
+// done 
+const userList = async (payload: any) => {
+
+  const page = Number(payload?.queries?.page) || 1;
+  const limit = Number(payload?.queries?.limit) || 5;
+  const skip = (page - 1) * limit;
+  const term = payload?.queries?.term || "";
+
+  
+  const pipeline: any[] = [
+    
+    { $match: { role: TUserRole.USER } },
+    {
+      $lookup: {
+        from: "wallets",
+        localField: "_id",
+        foreignField: "user",
+        as: "wallet"
+      }
+    },
+    { $unwind: "$wallet" },
+    { $match: { "wallet.status": { $ne: "pending" }
+  } },
+  ];
+
+  
+  if (term) {
+    pipeline.push({
+      $match: {
+        $or: [
+          { name: { $regex: term, $options: "i" } },
+          { email: { $regex: term, $options: "i" } },
+          { phone: { $regex: term, $options: "i" } },
+        ]
+      }
+    });
+  }
+
+  
+  const totalPipeline = [...pipeline, { $count: "total" }];
+  const totalResult = await User.aggregate(totalPipeline);
+  const totalUsers = totalResult[0]?.total || 0;
+
+  const dataPipeline = [
+    ...pipeline,
+    { $sort: { createdAt: -1 } },
+    { $skip: skip },
+    { $limit: limit },
+  ];
+
+  const users = await User.aggregate(dataPipeline);
+
+  return {
+    data: users,
+    meta: {
+      total: totalUsers,
+      page,
+      limit,
+      totalPages: Math.ceil(totalUsers / limit),
+    },
+  };
+};
+
+
+
+
+// done 
+const agentList = async (payload: any) => {
+
+  const page = Number(payload?.queries?.page) || 1;
+  const limit = Number(payload?.queries?.limit) || 5;
+  const skip = (page - 1) * limit;
+  const term = payload?.queries?.term || "";
+
+  
+  const pipeline: any[] = [
+    
+    { $match: { role: TUserRole.AGENT } },
+    {
+      $lookup: {
+        from: "wallets",
+        localField: "_id",
+        foreignField: "user",
+        as: "wallet"
+      }
+    },
+    { $unwind: "$wallet" },
+    { $match: { "wallet.status": { $ne: "pending" }
+  } },
+  ];
+
+  
+  if (term) {
+    pipeline.push({
+      $match: {
+        $or: [
+          { name: { $regex: term, $options: "i" } },
+          { email: { $regex: term, $options: "i" } },
+          { phone: { $regex: term, $options: "i" } },
+        ]
+      }
+    });
+  }
+
+  
+  const totalPipeline = [...pipeline, { $count: "total" }];
+  const totalResult = await User.aggregate(totalPipeline);
+  const totalUsers = totalResult[0]?.total || 0;
+
+  const dataPipeline = [
+    ...pipeline,
+    { $sort: { createdAt: -1 } },
+    { $skip: skip },
+    { $limit: limit },
+  ];
+
+  const users = await User.aggregate(dataPipeline);
+
+  return {
+    data: users,
+    meta: {
+      total: totalUsers,
+      page,
+      limit,
+      totalPages: Math.ceil(totalUsers / limit),
+    },
+  };
+};
+
+
+
+
+
+
+
+
+
+
+
+// done 
+
+interface IUpdateWalletStatus {
+  userId: string;
+  status: TWalletStatus;
+}
+
+const updateWalletStatus = async ({ userId, status }: IUpdateWalletStatus) => {
+  
+  if (!Types.ObjectId.isValid(userId)) {
+    throw new Error("Invalid user ID");
+  }
+
+  const wallet = await Wallet.findOne({ user: userId });
+  if (!wallet) {
+    throw new Error("Wallet not found for this user");
+  }
+
+  wallet.status = status;
+  await wallet.save();
+
+  return wallet;
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// done 
+const pendingAgents = async (payload: any) => {
+
+  const page = Number(payload?.queries?.page) || 1;
+  const limit = Number(payload?.queries?.limit) || 5;
+  const skip = (page - 1) * limit;
+  const term = payload?.queries?.term || "";
+
+  
+  const pipeline: any[] = [
+    
+    { $match: { role: TUserRole.AGENT } },
+    {
+      $lookup: {
+        from: "wallets",
+        localField: "_id",
+        foreignField: "user",
+        as: "wallet"
+      }
+    },
+    { $unwind: "$wallet" },
+    { $match: { "wallet.status": "pending" } },
+  ];
+
+  
+  if (term) {
+    pipeline.push({
+      $match: {
+        $or: [
+          { name: { $regex: term, $options: "i" } },
+          { email: { $regex: term, $options: "i" } },
+          { phone: { $regex: term, $options: "i" } },
+        ]
+      }
+    });
+  }
+
+  
+  const totalPipeline = [...pipeline, { $count: "total" }];
+  const totalResult = await User.aggregate(totalPipeline);
+  const totalUsers = totalResult[0]?.total || 0;
+
+  const dataPipeline = [
+    ...pipeline,
+    { $sort: { createdAt: -1 } },
+    { $skip: skip },
+    { $limit: limit },
+  ];
+
+  const users = await User.aggregate(dataPipeline);
+
+  return {
+    data: users,
+    meta: {
+      total: totalUsers,
+      page,
+      limit,
+      totalPages: Math.ceil(totalUsers / limit),
+    },
+  };
+};
+
+
+
+
+
+
+
+
+
+
+
 
 const AdminServices = {
   dashboardOverview,
   updateUserProfile,
   deleteUser,
+  pendingUsers,
+  pendingAgents,
+  fetchAllTransactions,
+  updateWalletStatus,
+  userList,
+  agentList,
 };
 
 export default AdminServices;

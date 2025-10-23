@@ -18,16 +18,14 @@ const fetchAllTransactions = catchAsync(async (req: Request, res: Response) => {
 
 
 const fetchMyAllTransactions = catchAsync(async (req: Request, res: Response) => {
-  const payload = req.token_user_info
+  const payload = {...req.token_user_info, queries:req.query}
   const result = await TransactionServices.fetchMyAllTransactions(payload);
 
   res.status(statusCode.OK).json({
     success: true,
     message: "Fetched transactions successfully",
     data: result.transactions,
-    meta: {
-      totalTransactions: result.totalTransactions
-    },
+    meta: result.meta
   });
 });
 

@@ -13,7 +13,7 @@ router.get(
 
 router.get(
   "/my-transactions",
-  checkAuth(TUserRole.USER),
+  checkAuth(TUserRole.USER, TUserRole.AGENT, TUserRole.ADMIN),
   TransactionControllers.fetchMyAllTransactions
 );
 

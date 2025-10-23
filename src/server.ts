@@ -2,7 +2,7 @@ import { Server } from "http";
 import mongoose from "mongoose";
 import app from "./app";
 import { envList } from "./app/config/envList";
-import { createServiceCharge, createSuperAdmin, seed } from "./app/utils/seed";
+import { createDummyTransactions, createDummyUsers, createServiceCharge, createSuperAdmin, seed } from "./app/utils/seed";
 
 let server: Server;
 
@@ -14,13 +14,20 @@ const startServer = async () => {
 
         console.log("YaY!! Connected to DB...");
 
+
+
+        await createServiceCharge();
+        await createSuperAdmin();
+        // await createDummyUsers()
+        // await createDummyTransactions();
+
+
         server = app.listen(envList.PORT, () => {
-            console.log(`Server  is successfully listening to port ${envList.PORT}`);
+            console.log(`Server  is successfully listening to port http://localhost:${envList.PORT}`);
         });
 
-        // await seed();
-        await createSuperAdmin();
-        await createServiceCharge();
+       
+      
 
     } catch (error) {
         console.log(error);

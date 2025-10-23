@@ -9,39 +9,24 @@ router.post(
   AuthControllers.credentialsLogin);
 
 
-router.get(
-  "/google", 
-  AuthControllers.google);
+
 
   
-router.get(
-  "/google/callback",
-  passport.authenticate("google", { failureRedirect: "/login" }),
-  AuthControllers.googleCallbackController
-);
-
-
-
-
-// router.post(
-//   "/reset-password",
-//   checkAuth(...Object.values(Role)),
-//   AuthControllers.resetPassword
-// );
-
-
-
-
-
-
-
-
-
-
 
 
 
 router.post("/logout", AuthControllers.logout);
+
+
+
+
+
+
+
+
+router.post("/refresh-token", AuthControllers.refreshToken)
+
+
 
 
 

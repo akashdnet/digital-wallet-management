@@ -6,7 +6,6 @@ export enum TUserRole {
     ADMIN = "admin",
 }
 
-export type TAgentStatus = "idk" | "approved" | "suspended";
 
 export interface TAuthProvider {
     provider: "credential" | "google",
@@ -19,11 +18,9 @@ export interface TUser {
     avatar?:string;
     name:string;
     email:string;
-    phone?:number;
+    phone?:string;
     password?:string;
     authProviders?: TAuthProvider[]
-    role?: TUserRole[];
+    role?: TUserRole;
     wallet?: ObjectId,
-    agentStatus?: TAgentStatus;
-    status?:string;
 }

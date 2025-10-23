@@ -82,8 +82,8 @@ const myProfile = async (req:Request) => {
   const userInfo = await User.findById(req.decodedToken?.userId ).select("-password").populate("wallet");
  
   const transactions = await Transaction.find({
-      $or: [{ senderId: req.decodedToken?.userId }, { receiverId: req.decodedToken?.userId }]
-    }).sort({ createdAt: -1 }); 
+      $or: [{ to: req.decodedToken?.userId }, { from: req.decodedToken?.userId }]
+    }).sort({ createdAt: -1 }).limit(5); 
      
 
     // console.log(transactions)
@@ -145,13 +145,12 @@ const updateMyProfile = async (payload:any) => {
 
  const updateUser = async (req:Request, id: string, payload: Partial<TUser>) => {
   
-    const {password, role, agentStatus, wallet, authProviders, _id,  ...rest} = payload;
+    const {password, role,  wallet, authProviders, _id,  ...rest} = payload;
     
     
 
     const authPayload = req.token_user_info.role.includes(TUserRole.ADMIN) ? {
       role,
-      agentStatus,
       wallet
      }:{}
 

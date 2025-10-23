@@ -1,5 +1,8 @@
 import { Schema, model } from "mongoose";
 import { TUser, TUserRole } from "./user.interface";
+import bcrypt from "bcrypt";
+import { envList } from "../../config/envList";
+
 
 const userSchema = new Schema<TUser>(
   {
@@ -20,6 +23,13 @@ const userSchema = new Schema<TUser>(
       type: String,
       required: true,
       unique: true,
+      validate: {
+        validator: (value: string) => {
+          const phoneRegex = /^01[0-9]{9}$/;
+          return phoneRegex.test(value);
+        },
+        message: "Invalid Bangladeshi phone number",
+      }
     },
     password: {
       type: String,
@@ -38,24 +48,37 @@ const userSchema = new Schema<TUser>(
       },
     ],
     role: {
-      type: [String],
-      enum: Object.values(TUserRole),
-      default: [TUserRole.USER],
+      type: String,
+      enum: Object.values(["user", "agent", "admin"]),
+      default: "user",
     },
     wallet: {
       type: Schema.Types.ObjectId,
       ref: "Wallet",
       unique: true,
     },
-    agentStatus: {
-      type: String,
-      enum: ["idk", "approved", "suspended", "pending"],
-      default: "idk",
-    },
+   
   },
   {
     timestamps: true,
   }
 );
+
+
+
+
+
+userSchema.pre("save", async function (next) {
+  if (this.isModified("password") && this.password) {
+    const saltRounds = envList.BCRYPT_SALT_ROUND;
+    this.password = await bcrypt.hash(this.password, saltRounds);
+  }
+  next();
+});
+
+
+
+
+
 
 export const User = model<TUser>("User", userSchema);

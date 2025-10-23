@@ -7,6 +7,9 @@ import AppError from "../../utils/AppError";
 import { createUserTokens } from "./jwt";
 import { setAuthCookie } from "../../utils/setCookies";
 import { envList } from "../../config/envList";
+import jwt, { JwtPayload } from "jsonwebtoken";
+import { User } from "../user/user.model";
+
 
 const credentialsLogin = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -38,39 +41,7 @@ const credentialsLogin = catchAsync(
   }
 );
 
-// login + signup both
-const google = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const redirect = req.query.redirect || "/";
-    passport.authenticate("google", {
-      scope: ["profile", "email"],
-      state: redirect as string,
-    })(req, res, next);
-  }
-);
 
-const googleCallbackController = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    let redirectTo = req.query.state ? (req.query.state as string) : "";
-
-    if (redirectTo.startsWith("/")) {
-      redirectTo = redirectTo.slice(1);
-    }
-
-    const user = req.user;
-    if (!user) {
-      throw new AppError(httpStatus.NOT_FOUND, "User Not Found");
-    }
-
-    const tokenInfo = createUserTokens(user);
-
-    setAuthCookie(res, tokenInfo);
-
-    res.redirect(`${envList.AFTER_GOOGLE_LOGIN_SUCCESS_URL}/${redirectTo}`);
-  }
-);
-
-// logout
 const logout = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     res.clearCookie("accessToken", {
@@ -94,9 +65,64 @@ const logout = catchAsync(
   }
 );
 
+
+
+
+
+const refreshToken = catchAsync(
+  
+  async (req: Request, res: Response, next: NextFunction) => {
+    
+    const refreshToken = req.cookies.refreshToken;
+
+    if (!refreshToken) {
+      return next(new AppError(httpStatus.UNAUTHORIZED, "Refresh token not found"));
+    }
+
+    try {
+      
+      const decoded = jwt.verify(
+        refreshToken,
+        envList.JWT_REFRESH_SECRET
+      ) as JwtPayload;
+
+
+      // console.log(`decodeeee:   `, decoded)
+
+      const user = await User.findById(decoded.userId);
+      if (!user) {
+        return next(new AppError(httpStatus.UNAUTHORIZED, "User not found"));
+      }
+
+      
+      const newTokens = createUserTokens(user);
+
+      
+      setAuthCookie(res, newTokens);
+
+      
+      sendResponse(res, {
+        success: true,
+        statusCode: httpStatus.OK,
+        message: "Access token refreshed successfully",
+        data: {
+          accessToken: newTokens.accessToken,
+        },
+      });
+    } catch (error) {
+      return next(new AppError(httpStatus.UNAUTHORIZED, "Invalid or expired refresh token"));
+    }
+  }
+);
+
+
+
+
+
+
+
 export const AuthControllers = {
   credentialsLogin,
-  google,
-  googleCallbackController,
   logout,
+  refreshToken,
 };

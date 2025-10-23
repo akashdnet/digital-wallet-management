@@ -8,9 +8,8 @@ import { verifyToken } from "../modules/auth/jwt";
 import { envList } from "../config/envList";
 import { TUserRole } from "../modules/user/user.interface";
 
-export const checkAuth =
-  (...authRoles: string[]) =>
-  async (req: Request, res: Response, next: NextFunction) => {
+export const checkAuth = (...authRoles: string[]) => async (req: Request, res: Response, next: NextFunction) => {
+
     try {
       let accessToken = req.headers.authorization;
       if (!accessToken && req.cookies?.accessToken) {
@@ -21,6 +20,7 @@ export const checkAuth =
       if (!accessToken) {
         throw new AppError(statusCode.BAD_REQUEST, "Please Login.");
       }
+
 
       // token check
       const verifiedToken = verifyToken(
@@ -55,11 +55,22 @@ export const checkAuth =
 
 
       // role - authorization check
-      const authorization = isUserExist.role?.some((role) =>
-        authRoles.includes(role)
-      );
+      // const authorization = isUserExist.role?.some((role) =>
+      //   authRoles.includes(role)
+      // );
+      console.log(`
+        
+        
+        
+        
+        
+        user data role`,authRoles)
+      const authorization = authRoles?.includes(isUserExist.role!);
+
+
+
       if (!authorization) {
-        throw new AppError(403, "[role based]: Unauthorize access!");
+        throw new AppError(403, "Unauthorize access!");
       }
 
 

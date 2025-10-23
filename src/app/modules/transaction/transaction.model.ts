@@ -1,58 +1,39 @@
-import { Schema, model } from "mongoose";
-import { TTransaction, TTransactionStatus, TTransactionType } from "./transaction.interface";
+import { Schema, Types, model } from "mongoose";
+import { TMethod, TTransaction } from "./transaction.interface";
 
 const transactionSchema = new Schema<TTransaction>(
   {
-    transactionId: {
-      type : String,
+    id: {
+      type: String,
       require: true
     },
-    type: {
+    method: {
       type: String,
-      enum: [ "send-money", "top-up", "cash-in", "cash-out"] as TTransactionType[],
+      enum: ["top-up", "add-money", "send-money", "cash-in", "cash-out"],
       required: true,
     },
-    senderId: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
+    from: {
+      type: String,
+      required: true,
     },
-    receiverId: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
+    formUserID: { type: Types.ObjectId, ref: "User" },
+    to: {
+      type: String,
+      required: true,
     },
-    sentBy: {
-      type: String,   //email or phone number
-    },
-    agentId: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-    },
-    charge: {
-      currentBalance: {
-        type: Number,
-      },
-      requestedSendingAmount: {
-        type: Number ,
-      },
-      serviceChargeForSendMoneySet: {
-        type: String || undefined, // how much admin set
-      },
-      serviceChargeForCashOutPercentageSet: {
-        type: Number || undefined, // how much admin set
-      },
-      serviceChargeForCashOutPercentage: {
-        type: Number, // how much the net charge 
-      },
-      amountWithCharge: {
-        type: Number, // how much should reduce after adding charge fee
-      },
-    
+    toUserID: { type: Types.ObjectId, ref: "User" },
 
+    amount: {
+      type: Number,
+      required: true,
+    },
+    date: {
+      type: Date,
+      required: true,
     },
     status: {
       type: String,
-      enum: ["completed", "failed"] as TTransactionStatus[],
-      default: "completed",
+      enum: ["completed", "failed"]
     },
   },
   {

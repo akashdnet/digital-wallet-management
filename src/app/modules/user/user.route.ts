@@ -19,7 +19,7 @@ router.post(
 
   // user profile 
   router.get("/me", 
-  checkAuth(TUserRole.USER),
+  checkAuth(TUserRole.ADMIN, TUserRole.AGENT, TUserRole.USER),
   UserControllers.myProfile);
   
   
@@ -27,7 +27,7 @@ router.post(
   // update profile 
   router.post(
     "/me",
-  checkAuth(TUserRole.USER),
+  checkAuth(TUserRole.ADMIN, TUserRole.USER, TUserRole.AGENT),
   upload.single("file"),
   validateRequest(UserValidation.updateMyProfileValidationSchema),
   UserControllers.updateMyProfile

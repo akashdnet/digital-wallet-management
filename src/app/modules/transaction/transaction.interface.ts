@@ -1,6 +1,7 @@
-import { ObjectId } from "mongoose";
+import { Types } from "mongoose";
+import { TUser } from "../user/user.interface";
 
-export type TTransactionType = "top-up" | "add-money" | "send-money" | "cash-in" | "cash-out";
+export type TMethod = "top-up" | "add-money" | "send-money" | "cash-in" | "cash-out";
 
 export type TTransactionStatus = "completed" | "failed";
 
@@ -28,13 +29,16 @@ export interface TCharge {
 
 
 export interface TTransaction {
-    transactionId: string
-    type: TTransactionType;
-    senderId?: ObjectId;
-    receiverId?: ObjectId;
-    sentBy: string;
-    agentId?: ObjectId;
-    charge?: TCharge;
-    status?: TTransactionStatus;
-    mobileNumber?: number;
+    date: Date;
+    id: string;
+    method: TMethod;
+    from: string;
+    formUserID: Types.ObjectId | TUser; 
+    to: string;
+    toUserID: Types.ObjectId | TUser;
+    status: TTransactionStatus;
+    amount: number;
+
 }
+
+

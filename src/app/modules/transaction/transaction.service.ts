@@ -52,16 +52,52 @@ const fetchAllTransactions = async () => {
 }
 
 
-const fetchMyAllTransactions = async (payload:any) => {
 
-    const totalTransactions = await Transaction.find({senderId: payload._id}).countDocuments();
-    
 
-    const transactions = await Transaction.find({senderId: payload._id}).populate("senderId", "name email").populate("receiverId", "name email");
-    
+// done
+const fetchMyAllTransactions = async (payload: any) => {
 
-    return {transactions: transactions? transactions : [], totalTransactions: totalTransactions? totalTransactions : 0};
-}
+  const limit = Number(payload?.queries?.limit) || 10;
+  const page = Number(payload?.queries?.page) || 1;
+  const skip = (page - 1) * limit;
+  const term = payload?.queries?.term || "";
+
+  const filter: any = {
+    $or: [{ to: payload._id }, { from: payload._id }],
+  };
+
+  if (term) {
+    filter.$and = [
+      {
+        $or: [
+          { invoice: { $regex: term, $options: "i" } },
+          { method: { $regex: term, $options: "i" } },
+          { to: { $regex: term, $options: "i" } },
+          { from: { $regex: term, $options: "i" } },
+        ],
+      },
+    ];
+  }
+
+  const totalTransactions = await Transaction.countDocuments(filter);
+
+  const transactions = await Transaction.find(filter)
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .skip(skip);
+
+  return {
+    transactions,
+    meta: {
+      totalTransactions,
+      page,
+      limit,
+      totalPages: Math.ceil(totalTransactions / limit),
+    },
+  };
+};
+
+
 
 
 
