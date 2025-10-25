@@ -59,7 +59,7 @@ const logout = catchAsync(
     sendResponse(res, {
       success: true,
       statusCode: httpStatus.OK,
-      message: "User Logged Out Successfully",
+      message: "Logged Out Successfully",
       data: null,
     });
   }

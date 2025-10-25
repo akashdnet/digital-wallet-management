@@ -10,35 +10,29 @@ import { TUserRole, TUser } from "./user.interface";
 
 
 
-interface TCreateUserPayload {data: Partial<TUser>;file: Express.Multer.File;}
-const createUser = catchAsync(async (req: Request, res: Response) => {
+const create = catchAsync(async (req: Request, res: Response) => {
 
-
-  const payload:TCreateUserPayload= { data : req.body, file: req.file!}
-  const result = await UserServices.createUser(payload);
-
+  const payload = { data: req.body, file: req.file! }
+  const result = await UserServices.create(payload);
 
   sendResponse(res, {
-    statusCode: statusCode.CREATED,
+    statusCode: statusCode.OK,
     success: true,
-    message: "User created successfully",
+    message: "Profile created successfully",
     data: result,
   });
 });
 
 
 
+const update = catchAsync(async (req: Request, res: Response) => {
 
-const updateMyProfile = catchAsync(async (req: Request, res: Response) => {
-  
-  // console.log(`update mmy profile payload.decodedToken.userId:`,  req.decodedToken)
-  
-  const payload:Partial<TCreateUserPayload & {decodedToken:any}>= { data : req.body, file: req.file!, decodedToken:req.decodedToken }
-  const result = await UserServices.updateMyProfile(payload);
+  const payload= { data : req.body, file: req.file!, decodedToken:req.decodedToken }
+  const result = await UserServices.update(payload);
 
 
   sendResponse(res, {
-    statusCode: statusCode.CREATED,
+    statusCode: statusCode.OK,
     success: true,
     message: "Profile updated successfully",
     data: result,
@@ -48,38 +42,47 @@ const updateMyProfile = catchAsync(async (req: Request, res: Response) => {
 
 
 
+const changePassword = catchAsync(async (req: Request, res: Response) => {
+  
 
 
+  
+  const payload:any= { 
+    id: req.decodedToken.userId ,
+    oldPassword:req.body.oldPassword, 
+    newPassword:req.body.newPassword, 
+  }
+  const result = await UserServices.changePassword(payload);
 
-
-
-
-
-
-
-
-const getAllUsers = catchAsync(async (req: Request, res: Response) => {
-  const result = await UserServices.getAllUsers();
 
   sendResponse(res, {
-    statusCode: statusCode.OK,
+    statusCode: statusCode.CREATED,
     success: true,
-    message: "Users retrieved successfully",
-    data: result.users,
-    meta: {
-      totalUsers: result.total
-    }
+    message: "Password changed successfully.",
+    data: result,
   });
 });
 
 
-const getSingleUser = catchAsync(async (req: Request, res: Response) => {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const me = catchAsync(async (req: Request, res: Response) => {
   
-  const { id } = req.params;
-  if(!id){
-    throw new AppError(statusCode.NOT_FOUND, "Please select user id.")
-  }
-  const user = await UserServices.getSingleUser(req, id);
+  const user = await UserServices.me(req);
   sendResponse(res, {
     statusCode: statusCode.OK,
     success: true,
@@ -92,61 +95,15 @@ const getSingleUser = catchAsync(async (req: Request, res: Response) => {
 
 
 
-const myProfile = catchAsync(async (req: Request, res: Response) => {
-  
-  const user = await UserServices.myProfile(req);
-  sendResponse(res, {
-    statusCode: statusCode.OK,
-    success: true,
-    message: "User retrieved successfully",
-    data: user
-  });
-});
 
 
 
-
-
-
-const updateUser = catchAsync(async (req: Request, res: Response) => {
-
-  const { id } = req.params;
-
-
-
-  const result = await UserServices.updateUser(req, id, req.body);
-
-  sendResponse(res, {
-    statusCode: statusCode.OK,
-    success: true,
-    message: "User updated successfully",
-    data: result,
-  });
-});
-
-
-
-
-const deleteUser = catchAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
-  if(!id){
-    throw new AppError(statusCode.BAD_REQUEST, "Please select user id.")
-  }
-  const result = await UserServices.deleteUser(req, id);
-
-  res.status(statusCode.OK).json({
-    success: true,
-    message: "User deleted successfully",
-    data: result,
-  });
-});
 
 export const UserControllers = {
-  createUser,
-  getAllUsers,
-  getSingleUser,
-  updateUser,
-  deleteUser,
-  myProfile,
-  updateMyProfile
+    create,
+  me,
+  update,
+  changePassword,
+
+
 };

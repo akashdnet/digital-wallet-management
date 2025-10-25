@@ -27,44 +27,18 @@ export const checkAuth = (...authRoles: string[]) => async (req: Request, res: R
         accessToken,
         envList.JWT_ACCESS_SECRET
       ) as JwtPayload;
-      const isUserExist = await User.findById(verifiedToken.userId);
+      const isUserExist = await User.findById(verifiedToken.userId).populate("wallet")  ;
       if (!isUserExist) {
         throw new AppError(httpStatus.BAD_REQUEST, "User does not exist");
       }
 
-      // account status check
-      // if (
-      //   isUserExist.status === "blocked" ||
-      //   isUserExist.status === "pending"
-      // ) {
-      //   throw new AppError(
-      //     httpStatus.BAD_REQUEST,
-      //     `Unauthorize access!: ${isUserExist.status} account cant be access this route`
-      //   );
-      // }
-
-
-
 
       req.decodedToken = verifiedToken;
       req.token_user_info = isUserExist;
+      
 
 
 
-
-
-
-      // role - authorization check
-      // const authorization = isUserExist.role?.some((role) =>
-      //   authRoles.includes(role)
-      // );
-      console.log(`
-        
-        
-        
-        
-        
-        user data role`,authRoles)
       const authorization = authRoles?.includes(isUserExist.role!);
 
 

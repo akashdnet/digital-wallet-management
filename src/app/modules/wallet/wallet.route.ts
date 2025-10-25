@@ -2,44 +2,55 @@ import express from "express";
 import { WalletControllers } from "./wallet.controller";
 import { checkAuth } from "../../middlewares/checkAuth";
 import { TUserRole } from "../user/user.interface";
+import { validateRequest } from "../../utils/validationRequest";
+import { WalletValidation } from "./wallet.validation";
 
 const router = express.Router();
 
-router.get(
-  "/:id",
-  checkAuth(TUserRole.USER, TUserRole.ADMIN),
-  WalletControllers.getWalletByUserId
-);
 
-router.post(
-  "/status",
-  checkAuth(TUserRole.ADMIN),
-  WalletControllers.walletStatus
-);
 
-router.post(
+
+
+
+
+router.patch(
   "/send-money",
   checkAuth(TUserRole.USER),
+  validateRequest(WalletValidation.sendMoney),
   WalletControllers.sendMoney
 );
 
-router.post(
-  "/top-up",
+
+
+router.patch(
+  "/cash-out",
   checkAuth(TUserRole.USER),
-  WalletControllers.topUp
+  validateRequest(WalletValidation.cashOut),
+  WalletControllers.cashOut
 );
 
-router.post(
+
+router.patch(
   "/cash-in",
   checkAuth(TUserRole.AGENT),
+  validateRequest(WalletValidation.cashIn),
   WalletControllers.cashIn
 );
 
 
-router.post(
-  "/cash-out",
-  checkAuth(TUserRole.USER),
-  WalletControllers.cashOut
+
+
+
+router.patch(
+  "/top-up",
+  checkAuth(TUserRole.USER, TUserRole.AGENT, TUserRole.ADMIN),
+  validateRequest(WalletValidation.topUp),
+  WalletControllers.topUp
 );
+
+
+
+
+
 
 export const WalletRoutes = router;

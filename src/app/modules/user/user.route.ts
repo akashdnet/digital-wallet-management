@@ -12,56 +12,37 @@ const router = express.Router();
 router.post(
   "/create",
   upload.single("file"),
-  validateRequest(UserValidation.createUserValidationSchema),
-  UserControllers.createUser
+  validateRequest(UserValidation.create),
+  UserControllers.create
 );
 
 
-  // user profile 
+  // view 
   router.get("/me", 
   checkAuth(TUserRole.ADMIN, TUserRole.AGENT, TUserRole.USER),
-  UserControllers.myProfile);
+  UserControllers.me
+);
   
   
   
-  // update profile 
-  router.post(
+  // update 
+  router.patch(
     "/me",
   checkAuth(TUserRole.ADMIN, TUserRole.USER, TUserRole.AGENT),
   upload.single("file"),
-  validateRequest(UserValidation.updateMyProfileValidationSchema),
-  UserControllers.updateMyProfile
+  validateRequest(UserValidation.update),
+  UserControllers.update
 );
 
 
 
 
 
-// all user 
-router.get("/all-users", 
-  checkAuth(TUserRole.ADMIN), 
-  UserControllers.getAllUsers);
-
-
-
-
-
-
-// single user 
-router.get("/:id", 
-  checkAuth(TUserRole.ADMIN, TUserRole.USER),
-  UserControllers.getSingleUser);
-
-
-
-
-
-// update user 
-router.patch(
-  "/:id",
-  checkAuth(TUserRole.ADMIN),
-  validateRequest(UserValidation.updateUserValidationSchema),
-  UserControllers.updateUser
+  router.patch(
+    "/change-password",
+  checkAuth(TUserRole.ADMIN, TUserRole.USER, TUserRole.AGENT),
+  validateRequest(UserValidation.changePassword),
+  UserControllers.changePassword,
 );
 
 
@@ -70,9 +51,13 @@ router.patch(
 
 
 
-// delete 
-router.delete("/:id", 
-  checkAuth(TUserRole.ADMIN, TUserRole.USER),
- UserControllers.deleteUser);
+
+
+
+
+
+
+
+
 
 export const UserRoutes = router;

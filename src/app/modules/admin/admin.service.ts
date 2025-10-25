@@ -169,11 +169,36 @@ const updateUserProfile = async (payload: UpdateUserProfileType, id: string) => 
   user.email = payload.email;
   user.phone = payload.phone;
 
+  const isPhoneExist = await User.findOne({ phone: payload.phone });
+  if (isPhoneExist && isPhoneExist._id.toString() !== id) {
+    throw new Error("Phone number already exists");
+  }
+
+
   if (payload.password) {
     user.password = payload.password; 
   }
 
   const result = await user.save(); 
+
+
+
+  if(payload?.balance){
+    const wallet = await Wallet.findOne({ user: id });
+    if(!wallet){
+      throw new Error("Wallet not found for this user. but user data is updated");
+    }
+    wallet.balance = Number(payload.balance);
+    await wallet?.save();
+   }
+
+
+
+
+
+
+
+
   return result;
 };
 

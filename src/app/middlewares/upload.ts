@@ -4,33 +4,30 @@ import cloudinary from "../config/cloudinary";
 
 
 const storage = new CloudinaryStorage({
-    cloudinary: cloudinary,
-    params: {
-        public_id: (req, file) => {
-            const fileName = file.originalname
-                .toLowerCase()
-                .replace(/\s+/g, "-") 
-                .replace(/\./g, "-")
-                .replace(/[^a-z0-9\-\.]/g, "")
+  cloudinary,
+  params: async (req, file): Promise<Record<string, string>> => {
+    const nameWithoutExt = file.originalname
+      .split(".")
+      .slice(0, -1)
+      .join(".")
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9\-]/g, "");
 
-            const extension = file.originalname.split(".").pop()
-            const uniqueFileName = Math.random().toString(36).substring(2) + "-" + Date.now() + "-" + fileName + "." + extension
-            console.log(`unique file name:    
-              
-              
-              
-              
-              
-              
-              
-              
-              
-              
-              :`, uniqueFileName)
+    const extension = file.originalname.split(".").pop();
 
-            return uniqueFileName
-        }
-    }
-})
+    const uniqueFileName =
+      Math.random().toString(36).substring(2) +
+      "-" +
+      Date.now() +
+      "-" +
+      nameWithoutExt;
 
-export const upload = multer({ storage: storage })
+    return {
+      folder: "uploads", 
+      public_id: uniqueFileName,
+    };
+  },
+});
+
+export const upload = multer({ storage });

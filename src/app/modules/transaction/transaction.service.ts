@@ -1,4 +1,4 @@
-import e from "express";
+import e, { Request } from "express";
 import AppError from "../../utils/AppError";
 import statusCode from "../../utils/statusCodes";
 import { TTransaction } from "./transaction.interface";
@@ -55,15 +55,26 @@ const fetchAllTransactions = async () => {
 
 
 // done
-const fetchMyAllTransactions = async (payload: any) => {
+const fetchMyAllTransactions = async (req:Request) => {
 
-  const limit = Number(payload?.queries?.limit) || 10;
-  const page = Number(payload?.queries?.page) || 1;
+  const queries = req.query
+
+  const limit = Number(queries?.limit) || 10;
+  const page = Number(queries?.page) || 1;
   const skip = (page - 1) * limit;
-  const term = payload?.queries?.term || "";
+  const term = queries?.term || "";
+
+
+
+
 
   const filter: any = {
-    $or: [{ to: payload._id }, { from: payload._id }],
+   $or: [
+        { to: req.token_user_info?.phone }, 
+        { from: req.token_user_info?.phone }, 
+        { fromUserID: req.token_user_info?._id }, 
+        {toUserID: req.token_user_info?._id },
+      ]
   };
 
   if (term) {

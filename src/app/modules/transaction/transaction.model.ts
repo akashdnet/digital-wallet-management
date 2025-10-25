@@ -16,7 +16,7 @@ const transactionSchema = new Schema<TTransaction>(
       type: String,
       required: true,
     },
-    formUserID: { type: Types.ObjectId, ref: "User" },
+    fromUserID: { type: Types.ObjectId, ref: "User" },
     to: {
       type: String,
       required: true,

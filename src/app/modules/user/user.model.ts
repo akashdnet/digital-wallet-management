@@ -8,7 +8,6 @@ const userSchema = new Schema<TUser>(
   {
     avatar:{
       type: String,
-      required: true,
     },
     name: {
       type: String,

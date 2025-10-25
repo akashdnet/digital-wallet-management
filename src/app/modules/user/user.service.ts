@@ -7,82 +7,110 @@ import { User } from "./user.model";
 import bcrypt from "bcryptjs"
 import { Wallet } from "../wallet/wallet.model";
 import { deleteCloudinaryImage } from "../../config/cloudinary";
-import is from "zod/v4/locales/is.cjs";
 import { Transaction } from "../transaction/transaction.model";
 
 
 
- const createUser= async (payload :{
-    data: Partial<TUser>;
-    file: Express.Multer.File;
+ const create = async (payload: {
+  data: Partial<TUser>;
+  file: Express.Multer.File;
 }) => {
-    const session = await User.startSession();
-    session.startTransaction();
-    try {
-        const { email, password, phone, role, ...rest } = payload.data;
+  const session = await User.startSession();
+  session.startTransaction();
+  try {
+    const { name, email, password, phone, role } = payload.data;
 
-        const isUserExist = await User.findOne({ email }).session(session);
-
-        if (isUserExist) {
-            throw new AppError(statusCode.BAD_REQUEST, "User Already Exist!!");
-        }
-
-        const hashedPassword = await bcrypt.hash(password!, envList.BCRYPT_SALT_ROUND);
-
-        const authProvider: TAuthProvider = { provider: "credential", providerId: email as string };
-
-        const user = await User.create([{
-            email,
-            phone: Number(phone),
-            avatar: payload.file.path, 
-            password: hashedPassword,
-            authProviders: [authProvider],
-            agentStatus: role?.includes(TUserRole.AGENT) ? "pending" : "idk" ,
-            role: [TUserRole.USER],
-            ...rest
-        }], { session });
-
-        if (!user.length) {
-            throw new AppError(statusCode.BAD_REQUEST, "Failed to create user");
-        }
-
-        const wallet = await Wallet.create([{
-            user: user[0]._id,
-            balance: 50,
-        }], { session });
-
-        if (!wallet.length) {
-            throw new AppError(statusCode.BAD_REQUEST, "Failed to create wallet for user");
-        }
-
-        const updatedUser = await User.findByIdAndUpdate(
-            user[0]._id,
-            { wallet: wallet[0]._id },
-            { new: true, session }
-        ).populate("wallet");
-
-
-        await session.commitTransaction();
-        session.endSession();
-
-        return updatedUser;
-    } catch (error) {
-        await session.abortTransaction();
-
-        if(payload.file){
-          await deleteCloudinaryImage(payload.file.path)
-
-        }
-        session.endSession();
-        throw error;
+    
+    const isUserExist = await User.findOne({ email }).session(session);
+    if (isUserExist) {
+      throw new AppError(statusCode.BAD_REQUEST, "User with this email already exists!");
     }
+
+    
+    const isUserExist2 = await User.findOne({ phone }).session(session);
+    if (isUserExist2) {
+      throw new AppError(statusCode.BAD_REQUEST, "User with this phone number already exists!");
+    }
+
+
+
+    const authProvider: TAuthProvider = {
+      provider: "credential",
+      providerId: email as string,
+    };
+
+    const user = await User.create(
+      [
+        {
+          name,
+          email,
+          phone, 
+          avatar: payload?.file?.path,
+          password: password ,
+          authProviders: [authProvider],
+          role: role || TUserRole.USER,
+        },
+      ],
+      { session }
+    );
+
+    if (!user.length) {
+      throw new AppError(statusCode.BAD_REQUEST, "Failed to create account.");
+    }
+
+    const wallet = await Wallet.create(
+      [
+        {
+          user: user[0]._id,
+          balance: 50,
+        },
+      ],
+      { session }
+    );
+
+    if (!wallet.length) {
+      throw new AppError(statusCode.BAD_REQUEST, "Failed to create wallet for user");
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      user[0]._id,
+      { wallet: wallet[0]._id },
+      { new: true, session }
+    ).populate("wallet");
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return updatedUser;
+  } catch (error) {
+    await session.abortTransaction();
+
+    if (payload.file) {
+      await deleteCloudinaryImage(payload.file.path);
+    }
+
+    session.endSession();
+    throw error;
+  }
 };
 
-const myProfile = async (req:Request) => {
+
+
+
+
+
+
+
+const me = async (req:Request) => {
   const userInfo = await User.findById(req.decodedToken?.userId ).select("-password").populate("wallet");
  
   const transactions = await Transaction.find({
-      $or: [{ to: req.decodedToken?.userId }, { from: req.decodedToken?.userId }]
+      $or: [
+        { to: req.token_user_info?.phone }, 
+        { from: req.token_user_info?.phone }, 
+        { fromUserID: req.token_user_info?._id }, 
+        {toUserID: req.token_user_info?._id },
+      ]
     }).sort({ createdAt: -1 }).limit(5); 
      
 
@@ -99,10 +127,21 @@ const myProfile = async (req:Request) => {
 
 
 
-const updateMyProfile = async (payload:any) => {
+const update = async (payload:any) => {
+
+
+  console.log(`user service:`, payload.data)
 
   // console.log(`update mmy profile payload.decodedToken.userId:`,  payload.decodedToken.userId)
   console.log(`payload data:`, payload.data)
+
+
+  
+  if(payload.decodedToken.userId !== payload.data.id){
+    console.log(`Unauthorized profile update request: payload id: ${payload.data.id}, token id: ${payload.decodedToken.userId}`)
+    throw new AppError(statusCode.UNAUTHORIZED, "You are not authorized."  )
+  }
+
 
   const result = await User.findByIdAndUpdate(payload.decodedToken.userId, {...payload.data, avatar: payload.file?.path}, { new: true, runValidators: true })
   if(!result){
@@ -114,92 +153,34 @@ const updateMyProfile = async (payload:any) => {
 
 
 
- const getAllUsers = async () => {
-  const users = await User.find().populate("wallet");
-  const total = await User.countDocuments();
-  return {
-    users,
-    total
-  };
-};
+const changePassword = async (payload:any) => {
+  const { oldPassword, newPassword, id } = payload;
+
+  console.log(`change password: `, payload)
+
+    const user = await User.findById(id);
+    if (!user) {
+        throw new AppError(statusCode.NOT_FOUND, "User not found");
+    }
 
 
+  const isMatch = await bcrypt.compare(oldPassword, user.password!);
 
-
-
-
-
- const getSingleUser = async (req:Request, id: string) => {
-  const result = await User.findById(id).select("-password").populate("wallet");
-  if(!result){
-    throw new AppError(statusCode.NOT_FOUND, "User Not found.")
+  if (!isMatch) {
+    throw new AppError(statusCode.UNAUTHORIZED, "Old password is incorrect");
   }
   
-  return result;
-};
+  user.password = newPassword;
+  await user.save();
 
+  return { message: "Password changed successfully" };
 
-
-
-
-
- const updateUser = async (req:Request, id: string, payload: Partial<TUser>) => {
   
-    const {password, role,  wallet, authProviders, _id,  ...rest} = payload;
-    
-    
 
-    const authPayload = req.token_user_info.role.includes(TUserRole.ADMIN) ? {
-      role,
-      wallet
-     }:{}
-
-
-     const isUserExist = await User.findById(payload._id)
-
-     
+}
 
 
 
-
-  const result = await User.findByIdAndUpdate(id, {...rest, phone: Number(payload.phone), ...authPayload }, {
-    new: true,
-  });
-
-
-  if(payload.avatar && isUserExist?.avatar && isUserExist.avatar !== payload.avatar){
-      await deleteCloudinaryImage(isUserExist.avatar)
-     }
-
-  return result;
-};
-
-
-
-
-
-
-
- const deleteUser = async (req:Request, id: string) => {
-
-
-  const tokenUser = await User.findById(req.decodedToken?.userId)
-  if(!tokenUser?.role?.includes(TUserRole.ADMIN) && tokenUser?._id?.toString() !== id){
-    throw new AppError(statusCode.FORBIDDEN, "You are not authorized.")
-  }
-
-
-  const result = await User.findByIdAndDelete(id);
-  if(!result){
-    throw new AppError(statusCode.NOT_FOUND, "User not found.")
-  }
-
-  if(result.avatar){
-    await deleteCloudinaryImage(result.avatar)
-  }
-
-  return result;
-};
 
 
 
@@ -220,13 +201,11 @@ const updateMyProfile = async (payload:any) => {
 
 
  const UserServices = {
-  createUser,
-  getAllUsers,
-  getSingleUser,
-  updateUser,
-  deleteUser,
-  myProfile,
-  updateMyProfile
+  create,
+  me,
+  update,
+  changePassword,
+
 };
 
 export default UserServices;

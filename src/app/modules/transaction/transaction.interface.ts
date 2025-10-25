@@ -33,9 +33,9 @@ export interface TTransaction {
     id: string;
     method: TMethod;
     from: string;
-    formUserID: Types.ObjectId | TUser; 
+    fromUserID: Types.ObjectId | TUser | any; 
     to: string;
-    toUserID: Types.ObjectId | TUser;
+    toUserID: Types.ObjectId | TUser | any; 
     status: TTransactionStatus;
     amount: number;
 
