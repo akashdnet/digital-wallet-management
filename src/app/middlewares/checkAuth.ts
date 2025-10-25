@@ -41,7 +41,8 @@ export const checkAuth = (...authRoles: string[]) => async (req: Request, res: R
 
       const authorization = authRoles?.includes(isUserExist.role!);
 
-
+      
+      console.log("user details:", isUserExist)
       console.log("user role",isUserExist.role)
       console.log("check auth", authorization)
 
