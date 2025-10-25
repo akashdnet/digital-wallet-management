@@ -1,12 +1,12 @@
 import { NextFunction, Request, Response } from "express";
-import { User } from "../modules/user/user.model";
-import { JwtPayload } from "jsonwebtoken";
 import httpStatus from "http-status-codes";
+import { JwtPayload } from "jsonwebtoken";
+import { envList } from "../config/envList";
+import { verifyToken } from "../modules/auth/jwt";
+import { TUserRole } from "../modules/user/user.interface";
+import { User } from "../modules/user/user.model";
 import AppError from "../utils/AppError";
 import statusCode from "../utils/statusCodes";
-import { verifyToken } from "../modules/auth/jwt";
-import { envList } from "../config/envList";
-import { TUserRole } from "../modules/user/user.interface";
 
 export const checkAuth = (...authRoles: string[]) => async (req: Request, res: Response, next: NextFunction) => {
 
@@ -41,6 +41,9 @@ export const checkAuth = (...authRoles: string[]) => async (req: Request, res: R
 
       const authorization = authRoles?.includes(isUserExist.role!);
 
+
+      console.log("user role",isUserExist.role)
+      console.log("check auth", authorization)
 
 
       if (!authorization) {
