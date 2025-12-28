@@ -1,11 +1,8 @@
----
-
 # 💼 Digital Wallet Management System
 
-Welcome! This project is a role-based digital wallet system where **Users**, **Agents**, and **Admins** have different powers and responsibilities. It's built with Express.js and MongoDB.
+A robust, role-based digital wallet system where **Users**, **Agents**, and **Admins** manage transactions, wallets, and system configurations. Built with **Express.js**, **TypeScript**, and **MongoDB**.
 
 ---
-
 
 ## 🛠️ Technology Stack
 
@@ -15,102 +12,123 @@ Welcome! This project is a role-based digital wallet system where **Users**, **A
 | 🔧 Framework | Express.js |
 | 🧠 Language | TypeScript |
 | 🛢️ Database | MongoDB + Mongoose |
-| 🛡️ Security | jwt, bcrypt |
-| 📦 Others | cors, cookie-parser, zod, dotenv, etc. |
+| 🛡️ Security | JWT, Bcrypt, Passport.js |
+| 📦 Validation | Zod |
+| ☁️ Storage | Cloudinary (for profile images) |
 
 ---
-
-
 
 ## 🚀 Getting Started
 
-### Clone & Run
+### 1. Clone & Install
 ```bash
 git clone https://github.com/akashdnet/digital-wallet-management.git
 cd digital-wallet-management
+npm install
+```
+
+### 2. Environment Setup
+Create a `.env` file in the root directory and add the following (refer to `example-env.txt`):
+```env
+PORT=5000
+DB_URI=your_mongodb_uri
+JWT_ACCESS_SECRET=your_secret
+JWT_REFRESH_SECRET=your_secret
+...
+```
+
+### 3. Run the Development Server
+```bash
 npm run dev
 ```
 
-> Before you start the server, make sure to create your `.env` file using the provided `example.env`.
+---
+
+## 🌐 API Documentation
+
+**Base URL:** `http://localhost:5000/api/v1`
+
+### 🔐 Authentication Routes (`/auth`)
+
+| Method | Endpoint | Description | Auth Required | Request Body/Types |
+|:---:|:---|:---|:---:|:---|
+| `POST` | `/login` | Login with credentials | No | `email (string), password (string)` |
+| `POST` | `/logout` | Clear auth cookies | Yes | None |
+| `POST` | `/refresh-token` | Refresh access token | Yes (Cookie) | None |
 
 ---
 
-## 🌐 Base URL
+### 👤 User Routes (`/user`)
 
-```
-http://localhost:5000/api/v1/
-```
-
----
-
-## 👥 Roles & Features
-
-### 👤 User
-- Send money to other users 
-- Cash out money from agents
-- Cash in money via agents
-- Top-up any valid BD number 
-- Login using email/password or Google
-- Create account (wallet starts with 50 Taka and `pending` status)
-- Can only access and update their own profile and wallet info
-
-### 🧑‍💼 Agent
-- Cash-in money to users with active wallets
-- Accept cash-out requests from users
-
-### 🛡️ Admin
-- View, update, or delete any user and wallet
-- activate/block user wallets
-- View all transactions
-- Update transaction service charges
+| Method | Endpoint | Description | Auth Required | Request Details |
+|:---:|:---|:---|:---:|:---|
+| `POST` | `/create` | Register a new user | No | **FormData**: `name`, `email`, `phone` (01XXXXXXXXX), `password` (min 8), `role` ('user'\|'agent'), `file` (avatar) |
+| `GET` | `/me` | Get profile | Yes | Returns current user details |
+| `PATCH` | `/me` | Update profile | Yes | **FormData**: `id`, `name`, `email`, `phone`, `file` (optional) |
+| `PATCH` | `/change-password` | Change password | Yes | `id`, `oldPassword`, `newPassword`, `confirm_new_password` |
 
 ---
 
-## 📦 API Routes
+### 💰 Wallet Routes (`/wallet`)
 
-### 🔐 Auth Routes `/auth`
-- `POST /login` — Login with credentials
-- `GET /google` — Login using Google
+| Method | Endpoint | Description | Auth | Request Body (JSON) |
+|:---:|:---|:---|:---:|:---|
+| `PATCH` | `/send-money` | Transfer funds | User | `amount` (string, >0), `to` (email OR phone) |
+| `PATCH` | `/cash-out` | User to Agent | User | `amount` (string, >0), `to` (phone) |
+| `PATCH` | `/cash-in` | Agent to User | Agent | `amount` (string, >0), `to` (phone) |
+| `PATCH` | `/top-up` | Mobile Recharge | User/Agent | `amount` (string, >0), `to` (phone) |
 
----
-
-### 🧍 User Routes `/user`
-- `POST /create` — Create user account (auto wallet with 50 Taka, `pending`)
-- `GET /all-users` — Get all users (admin only)
-- `GET /:id` — View user details (admin or same user)
-- `DELETE /:id` — Delete user account (admin or same user)
-- `PATCH /:id` — Update user info (admin can edit anyone, user can edit themselves)
+> *Fees apply to `send-money` (fixed) and `cash-out` (percentage). `cash-in` and `top-up` are free.*
 
 ---
 
-### 💰 Wallet Routes `/wallet`
-- `GET /:id` — View wallet info (admin or self)
-- `PATCH /status` — Admin changes wallet status (`pending`, `active`, `blocked`)
-- `PATCH /send-money` — Send money to another user (includes service charge)
-- `PATCH /top-up` — TopUp to any BD mobile number (no service charge)
-- `PATCH /cash-in` — Agent sends money to user (no fee)
-- `PATCH /cash-out` — User sends money to agent (includes service charge)
+### 🛡️ Admin Routes (`/admin`)
+
+| Method | Endpoint | Description | Type / Body |
+|:---:|:---|:---|:---|
+| `GET` | `/dashboard-overview` | System Overview | Stats (Users, Balances, etc.) |
+| `PATCH` | `/update-wallet-status/:userId` | Change Wallet Status | `status`: 'active', 'blocked', 'pending' |
+| `PATCH` | `/update-user-profile/:userId` | Edit Profile & Balance | `name`, `email`, `phone`, `balance` (unit: Taka), `password` (opt) |
+| `DELETE` | `/delete-user/:userID` | Remove User | Param: `userID` |
+| `GET` | `/user-list` | List regular users | Query: `page`, `limit` |
+| `GET` | `/agent-list` | List agents | Query: `page`, `limit` |
+| `GET` | `/pending-users` | New registrations | List |
+| `GET` | `/pending-agents` | New agent requests | List |
 
 ---
 
-### 📄 Transaction Routes `/transactions`
-- `GET /` — View all transactions (admin only)
-- `GET /:id` — View a specific user's transactions (admin or same user)
+### 📊 Transaction Routes (`/transaction`)
+
+| Method | Endpoint | Description | Auth |
+|:---:|:---|:---|:---:|
+| `GET` | `/all-transactions`| All system logs | Admin |
+| `GET` | `/my-transactions` | Own logs | User/Agent |
+| `GET` | `/:id` | Specific user logs | Admin |
 
 ---
 
-### ⚙️ Service Charge Routes `/service-charge`
-- `GET /` — View current service charges
-- `PATCH /` — Update service charges (admin only)
+### ⚙️ Service Charge Routes (`/service-charge`)
+
+| Method | Endpoint | Description | Request Body |
+|:---:|:---|:---|:---|
+| `GET` | `/` | View settings | None |
+| `PATCH` | `/` | Update settings | `sendMoneyCost` (number), `withdrawalFeePercentage` (number) |
+
 
 ---
 
-## 📝 Featues Note
-- Role-based access control
-- Transaction management in a wallet system
-- Secure login and Google Auth
-- Service charge logic and ownership checks
-- Admin has full access.
-- Users are can view or partialy chang their own data and topup.
-- All transactions and role-based permissions are protected through middleware checks.
-- Wallet must be activated by Admin before transactions can begin.
+## 🛡️ Role-Based Access Control (RBAC)
+
+- **User**: Can send money, cash out, top-up, and view own transactions.
+- **Agent**: Can cash-in to users and view own transaction history.
+- **Admin**: Full control over users, agents, wallet status, and service charges.
+
+## 📝 Features Note
+- **Automatic Bonus**: New users receive 50 Taka upon registration (wallet starts as `pending`).
+- **Validation**: All inputs are validated using **Zod** schemas.
+- **Security**: Password hashing with Bcrypt and JWT-based session management using cookies.
+- **Transaction History**: Every money movement is tracked with unique transaction IDs.
+
+---
+
+Built with ❤️ by [Akash](https://github.com/akashdnet)

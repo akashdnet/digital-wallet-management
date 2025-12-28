@@ -1,12 +1,12 @@
-import express, { Request, Response } from "express";
-import cors from "cors";
-import notFound from "./app/middlewares/notFound";
-import globalErrorHandler from "./app/middlewares/globalErrorHandler";
-import { router } from "./app/routes";
-import passport from "passport";
 import cookieParser from "cookie-parser";
-import { envList } from "./app/config/envList";
+import cors from "cors";
+import express, { Request, Response } from "express";
 import expressSession from "express-session";
+import passport from "passport";
+import { envList } from "./app/config/envList";
+import globalErrorHandler from "./app/middlewares/globalErrorHandler";
+import notFound from "./app/middlewares/notFound";
+import { router } from "./app/routes";
 
 import './app/config/passport';
 
@@ -26,9 +26,12 @@ app.use(passport.session())
 app.use(cookieParser())
 app.use(express.json());
 
+
+
+// multiple cors
 app.use(cors({
-  origin: envList.FRONT_END_SITE, 
-  credentials: true                
+    origin: [envList.FRONT_END_SITE, "https://nextjs-digital-wallet.vercel.app"],
+    credentials: true
 }));
 
 

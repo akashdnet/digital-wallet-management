@@ -1,10 +1,10 @@
 import express from "express";
-import { UserControllers } from "./user.controller";
-import { validateRequest } from "../../utils/validationRequest";
-import { UserValidation } from "./user.validation";
 import { checkAuth } from "../../middlewares/checkAuth";
-import { TUserRole } from "./user.interface";
 import { upload } from "../../middlewares/upload";
+import { validateRequest } from "../../utils/validationRequest";
+import { UserControllers } from "./user.controller";
+import { TUserRole } from "./user.interface";
+import { UserValidation } from "./user.validation";
 
 const router = express.Router();
 
@@ -17,17 +17,23 @@ router.post(
 );
 
 
-  // view 
-  router.get("/me", 
+// view 
+router.get("/me",
   checkAuth(TUserRole.ADMIN, TUserRole.AGENT, TUserRole.USER),
   UserControllers.me
 );
-  
-  
-  
-  // update 
-  router.patch(
-    "/me",
+
+
+router.get("/overview",
+  checkAuth(TUserRole.ADMIN, TUserRole.AGENT, TUserRole.USER),
+  UserControllers.overview
+);
+
+
+
+// update 
+router.patch(
+  "/me",
   checkAuth(TUserRole.ADMIN, TUserRole.USER, TUserRole.AGENT),
   upload.single("file"),
   validateRequest(UserValidation.update),
@@ -38,8 +44,8 @@ router.post(
 
 
 
-  router.patch(
-    "/change-password",
+router.patch(
+  "/change-password",
   checkAuth(TUserRole.ADMIN, TUserRole.USER, TUserRole.AGENT),
   validateRequest(UserValidation.changePassword),
   UserControllers.changePassword,

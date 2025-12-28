@@ -1,10 +1,8 @@
 import { Request, Response } from "express";
-import UserServices from "./user.service";
-import statusCode from "../../utils/statusCodes";
-import { sendResponse } from "../../utils/sendResponse";
 import { catchAsync } from "../../utils/catchAsync";
-import AppError from "../../utils/AppError";
-import { TUserRole, TUser } from "./user.interface";
+import { sendResponse } from "../../utils/sendResponse";
+import statusCode from "../../utils/statusCodes";
+import UserServices from "./user.service";
 
 
 
@@ -27,7 +25,7 @@ const create = catchAsync(async (req: Request, res: Response) => {
 
 const update = catchAsync(async (req: Request, res: Response) => {
 
-  const payload= { data : req.body, file: req.file!, decodedToken:req.decodedToken }
+  const payload = { data: req.body, file: req.file!, decodedToken: req.decodedToken }
   const result = await UserServices.update(payload);
 
 
@@ -43,14 +41,14 @@ const update = catchAsync(async (req: Request, res: Response) => {
 
 
 const changePassword = catchAsync(async (req: Request, res: Response) => {
-  
 
 
-  
-  const payload:any= { 
-    id: req.decodedToken.userId ,
-    oldPassword:req.body.oldPassword, 
-    newPassword:req.body.newPassword, 
+
+
+  const payload: any = {
+    id: req.decodedToken.userId,
+    oldPassword: req.body.oldPassword,
+    newPassword: req.body.newPassword,
   }
   const result = await UserServices.changePassword(payload);
 
@@ -81,7 +79,7 @@ const changePassword = catchAsync(async (req: Request, res: Response) => {
 
 
 const me = catchAsync(async (req: Request, res: Response) => {
-  
+
   const user = await UserServices.me(req);
   sendResponse(res, {
     statusCode: statusCode.OK,
@@ -99,11 +97,22 @@ const me = catchAsync(async (req: Request, res: Response) => {
 
 
 
+const overview = catchAsync(async (req: Request, res: Response) => {
+  const result = await UserServices.overview(req.decodedToken.userId);
+  sendResponse(res, {
+    statusCode: statusCode.OK,
+    success: true,
+    message: "Overview data retrieved successfully",
+    data: result,
+  });
+});
+
 export const UserControllers = {
-    create,
+  create,
   me,
   update,
   changePassword,
+  overview,
 
 
 };

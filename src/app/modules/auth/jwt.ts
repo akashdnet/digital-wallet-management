@@ -1,17 +1,17 @@
 import jwt, { JwtPayload, SignOptions } from "jsonwebtoken"
-import { TUser } from "../user/user.interface"
 import { envList } from "../../config/envList"
-import { User } from "../user/user.model"
-import statusCode from "../../utils/statusCodes"
 import AppError from "../../utils/AppError"
+import statusCode from "../../utils/statusCodes"
+import { TUser } from "../user/user.interface"
+import { User } from "../user/user.model"
 
 
 
 
 // ---------------------
 export const generateToken = (payload: JwtPayload, secret: string, expiresIn: string) => {
-    
-    const token = jwt.sign(payload, secret, {expiresIn} as SignOptions)
+
+    const token = jwt.sign(payload, secret, { expiresIn } as SignOptions)
 
     return token
 }

@@ -1,5 +1,4 @@
 import { Response } from "express";
-import { envList } from "../config/envList";
 
 export interface AuthTokens {
   accessToken?: string;
@@ -12,6 +11,7 @@ export const setAuthCookie = (res: Response, tokenInfo: AuthTokens) => {
       httpOnly: true,
       secure: true,
       sameSite: "none",
+      maxAge: 15 * 60 * 60 * 1000,
     });
   }
 
@@ -20,6 +20,7 @@ export const setAuthCookie = (res: Response, tokenInfo: AuthTokens) => {
       httpOnly: true,
       secure: true,
       sameSite: "none",
+      maxAge: 15 * 60 * 60 * 1000,
     });
   }
 };
