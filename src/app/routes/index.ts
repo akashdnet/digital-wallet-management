@@ -1,11 +1,13 @@
 import { Router } from "express"
-import { UserRoutes } from "../modules/user/user.route"
-import { AuthRoutes } from "../modules/auth/auth.route"
-import { WalletRoutes } from "../modules/wallet/wallet.route"
-import { ChargeRoutes } from "../modules/charge/charge.route"
-import { TransactionRoutes } from "../modules/transaction/transaction.route"
-import { TestRoutes } from "../modules/test/test.route"
 import { AdminRoutes } from "../modules/admin/admin.route"
+import { AuthRoutes } from "../modules/auth/auth.route"
+import { ChargeRoutes } from "../modules/charge/charge.route"
+import { ContactUsRoutes } from "../modules/contactus/contactus.route"
+import { TestRoutes } from "../modules/test/test.route"
+import { TransactionRoutes } from "../modules/transaction/transaction.route"
+import { UserRoutes } from "../modules/user/user.route"
+import { WalletRoutes } from "../modules/wallet/wallet.route"
+
 
 export const router = Router()
 
@@ -37,6 +39,10 @@ const moduleRoutes = [
     {
         path: "/test",
         route: TestRoutes
+    },
+    {
+        path: "/contact-us",
+        route: ContactUsRoutes
     },
 ]
 

@@ -194,36 +194,56 @@ const overview = async (userId: string) => {
   const balance = wallet?.balance || 0;
 
   // 2. Total Transactions
-  const totalTransactions = await Transaction.countDocuments({
-    $or: [{ fromUserID: userId }, { toUserID: userId }],
-  });
+  // For Admin: System-wide. For Others: Personal.
+  const transactionFilter = role === TUserRole.ADMIN
+    ? {}
+    : {
+      $or: [
+        { fromUserID: user._id },
+        { toUserID: user._id },
+        { from: user.phone },
+        { to: user.phone }
+      ]
+    };
 
-  // 3. Transactions for the last 5
-  const last5Transactions = await Transaction.find({
-    $or: [{ fromUserID: userId }, { toUserID: userId }],
-  })
-    .sort({ createdAt: -1 })
-    .limit(5);
+  const totalTransactions = await Transaction.countDocuments(transactionFilter);
+
+  // 3. Last 5 Transactions
+  const last5Transactions = await Transaction.find(transactionFilter)
+    .sort({ date: -1 })
+    .limit(5)
+    .populate("fromUserID toUserID");
 
   // 4. Monthly Spending and Separate categories for the current year
   const currentYear = new Date().getFullYear();
   const startOfYear = new Date(currentYear, 0, 1);
 
   // Define relevant methods based on role
-  const relevantMethods =
-    role === TUserRole.USER
-      ? ["cash-out", "send-money", "top-up"]
-      : ["cash-in", "top-up"];
+  let relevantMethods: string[] = [];
+  if (role === TUserRole.USER) {
+    relevantMethods = ["cash-out", "send-money", "top-up"];
+  } else if (role === TUserRole.AGENT) {
+    relevantMethods = ["cash-in", "top-up"];
+  } else if (role === TUserRole.ADMIN) {
+    relevantMethods = ["cash-out", "send-money", "top-up", "cash-in", "top-up"];
+  }
+
+  const matchStage: any = {
+    method: { $in: relevantMethods },
+    date: { $gte: startOfYear },
+    status: "completed",
+  };
+
+  // If not admin, only show transactions THEY initiated (spending/activity)
+  if (role !== TUserRole.ADMIN) {
+    matchStage.$or = [
+      { fromUserID: user._id },
+      { from: user.phone }
+    ];
+  }
 
   const yearTransactions = await Transaction.aggregate([
-    {
-      $match: {
-        fromUserID: user._id,
-        method: { $in: relevantMethods },
-        date: { $gte: startOfYear },
-        status: "completed",
-      },
-    },
+    { $match: matchStage },
     {
       $group: {
         _id: {
@@ -235,18 +255,24 @@ const overview = async (userId: string) => {
     },
   ]);
 
-  // Process monthly spend mapping to ensure all 12 months are present
+  // Process data for frontend
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const monthlySpendMap: Record<number, number> = {};
   for (let i = 1; i <= 12; i++) monthlySpendMap[i] = 0;
 
-  const categorySpend: Record<string, number> = {};
-  relevantMethods.forEach((m) => (categorySpend[m] = 0));
+  const categorySpend: Record<string, number> = {
+    "cash-out": 0,
+    "send-money": 0,
+    "top-up": 0,
+    "cash-in": 0,
+  };
 
   yearTransactions.forEach((item) => {
     const month = item._id.month;
     const method = item._id.method;
-    monthlySpendMap[month] = (monthlySpendMap[month] || 0) + item.totalAmount;
+
+    monthlySpendMap[month] += item.totalAmount;
+
     if (categorySpend.hasOwnProperty(method)) {
       categorySpend[method] += item.totalAmount;
     }
@@ -265,6 +291,7 @@ const overview = async (userId: string) => {
     last5Transactions,
   };
 };
+
 
 
 
